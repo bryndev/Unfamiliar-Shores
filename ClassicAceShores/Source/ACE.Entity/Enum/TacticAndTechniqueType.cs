@@ -12,5 +12,9 @@ namespace ACE.Entity.Enum
         PowerShot,
         Misdirect,
         MasteryAxe,
+        MaceCrush,
+        SpearReach,
+        FistFury,
+        BowVolley,
     }
 }

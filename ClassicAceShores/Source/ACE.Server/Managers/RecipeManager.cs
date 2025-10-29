@@ -2066,7 +2066,11 @@ namespace ACE.Server.Managers
         /// </summary>
         public static HashSet<uint> CreateDestroyItems(Player player, Recipe recipe, WorldObject source, WorldObject target, double successChance, bool success)
         {
+            var destroyTargetChance = success ? recipe.SuccessDestroyTargetChance : recipe.FailDestroyTargetChance;
             var destroySourceChance = success ? recipe.SuccessDestroySourceChance : recipe.FailDestroySourceChance;
+
+            var destroyTarget = ThreadSafeRandom.Next(0.0f, 1.0f) < destroyTargetChance;
+            var destroySource = ThreadSafeRandom.Next(0.0f, 1.0f) < destroySourceChance;
 
             var createItem = success ? recipe.SuccessWCID : recipe.FailWCID;
             var createAmount = success ? recipe.SuccessAmount : recipe.FailAmount;
@@ -2078,8 +2082,16 @@ namespace ACE.Server.Managers
                 return null;
             }
 
-            // Only destroy the salvage (source), not the target
-            bool destroySource = ThreadSafeRandom.Next(0.0f, 1.0f) < destroySourceChance;
+            if (destroyTarget)
+            {
+                var destroyTargetAmount = success ? recipe.SuccessDestroyTargetAmount : recipe.FailDestroyTargetAmount;
+                var destroyTargetMessage = success ? recipe.SuccessDestroyTargetMessage : recipe.FailDestroyTargetMessage;
+
+                if (recipe.IsTinkering() && target.WeenieType == WeenieType.Missile)
+                    destroyTargetAmount = (uint)(target.StackSize ?? 1); // Thrown weapons tinkering should destroy the whole stack on failure.
+
+                DestroyItem(player, recipe, target, destroyTargetAmount, destroyTargetMessage);
+            }
 
             if (destroySource)
             {
@@ -2095,7 +2107,19 @@ namespace ACE.Server.Managers
             {
                 result = CreateItem(player, createItem, createAmount);
 
-                // No spell transfer or destruction of target
+                if (destroyTarget && result != null && target.ExtraSpellsList != null)
+                {
+                    // Transfer spells to the new item.
+                    var spells = target.ExtraSpellsList.Split(",");
+
+                    foreach (string spellString in spells)
+                    {
+                        if (uint.TryParse(spellString, out var spellId))
+                            SpellTransferScroll.InjectSpell(spellId, result);
+                    }
+
+                    player.EnqueueBroadcast(new GameMessageUpdateObject(result));
+                }
             }
 
             var modified = ModifyItem(player, recipe, source, target, result, success);
@@ -2119,7 +2143,7 @@ namespace ACE.Server.Managers
 
                 player.Session.Network.EnqueueSend(new GameMessageSystemChat(message, ChatMessageType.Craft));
 
-                log.Debug($"[CRAFTING] {player.Name} used {source.NameWithMaterial} on {target.NameWithMaterial} {(success ? "" : "un")}successfully. {(destroySource ? $"| {source.NameWithMaterial} was destroyed " : "")}| {message}");
+                log.Debug($"[CRAFTING] {player.Name} used {source.NameWithMaterial} on {target.NameWithMaterial} {(success ? "" : "un")}successfully. {(destroySource ? $"| {source.NameWithMaterial} was destroyed " : "")}{(destroyTarget ? $"| {target.NameWithMaterial} was destroyed " : "")}| {message}");
             }
             else
                 BroadcastTinkering(player, source, target, successChance, success);

@@ -126,6 +126,28 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
+            //Custom XP Bottle
+            else if (WeenieClassId == 490071)
+            {
+                if (!ItemTotalXp.HasValue || ItemTotalXp < 1)
+                {
+                    player.SendTransientError($"Your XP bottle is empty");
+                    return;
+                }
+
+                //XP bottle is capped at 10 bil xp
+                if (ItemTotalXp > 10000000000)
+                {
+                    ItemTotalXp = 10000000000;
+                }
+
+                player.GrantXP(ItemTotalXp.Value, XpType.Admin, ShareType.None);
+                player.TryConsumeFromInventoryWithNetworking(this, 1);
+                return;
+            }
+
+                // #endregion Custom gems
+
             // trying to use a dispel potion while pk timer is active
             // send error message and cancel - do not consume item
             if (SpellDID != null)
