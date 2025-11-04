@@ -283,8 +283,8 @@ namespace ACE.Server.WorldObjects
                         {
                             // Low tier rewards (levels 1-20ish)
                             GiveFromEmote(sourceObject, 116057);  // REPLACE WITH YOUR LOW TIER WCID #1
-                            GiveFromEmote(sourceObject, 1115084);  // REPLACE WITH YOUR LOW TIER WCID #2
-                            GiveFromEmote(sourceObject, 2225084);  // REPLACE WITH YOUR LOW TIER WCID #3
+                            GiveFromEmote(sourceObject, 50182);  // REPLACE WITH YOUR LOW TIER WCID #2
+                            GiveFromEmote(sourceObject, 4616);  // REPLACE WITH YOUR LOW TIER WCID #3
                         }
                         else if (rewardTier <= 5)
                         {
