@@ -853,7 +853,7 @@ namespace ACE.Server.WorldObjects
 
         public static int RollTier(double extendedTier)
         {
-            var extendedTierClamped = Math.Clamp(extendedTier, 1, 6);
+            var extendedTierClamped = Math.Clamp(extendedTier, 1, 8);
 
             var tierLevelUpChance = extendedTierClamped % 1;
             var tierLevelUpRoll = ThreadSafeRandom.NextInterval(0);
@@ -884,10 +884,10 @@ namespace ACE.Server.WorldObjects
                 return 3f + (float)Math.Pow((level - 50f) / 50f, 2);
             else if (level < 120) // Tier 4.0 to 5.0
                 return 4f + (float)Math.Pow((level - 100f) / 20f, 2);
-            else if (level < 180) // Tier 5.0 to 6.0
+            else if (level < 200) // Tier 5.0 to 8.0
                 return 5f + (float)Math.Pow((level - 120f) / 60f, 2);
-            else // Tier 6.0
-                return 6f;
+           else // Tier 8.0
+        return 8f;
         }
     }
 }
