@@ -125,6 +125,7 @@ namespace ACE.Server.WorldObjects
 
             if (useName && !fromAcademy)
                 Session.Network.EnqueueSend(new GameMessageSystemChat($"{sourceObject.Name} tells you, \"Here's your assignments:\"", ChatMessageType.Tell));
+
             Session.Network.EnqueueSend(new GameMessageSystemChat(msg, useName ? ChatMessageType.Tell : ChatMessageType.Broadcast));
 
             if (explorationList.Count != 0 && !fromAcademy)
@@ -266,7 +267,48 @@ namespace ACE.Server.WorldObjects
             {
                 Session.Network.EnqueueSend(new GameMessageSystemChat($"{sourceObject.Name} tells you, \"Here's your reward for the completed assignments:\"", ChatMessageType.Tell));
 
-                var rewardTier = Math.Clamp(RollTier(CalculateExtendedTier(Level ?? 1)) + 3, 1, 7);
+                // Grant XP for completed contracts using reward-by-level system (once a day frequency)
+                int completedCount = (assignment1Complete ? 1 : 0) + (assignment2Complete ? 1 : 0) + (assignment3Complete ? 1 : 0);
+                
+                // Calculate and grant actual XP directly based on level
+                if (completedCount > 0)
+                {
+                    // Base XP calculation: 1000 XP per level per assignment completed
+                    // Adjust this formula as needed for your server
+                    long baseXpPerAssignment = 1000L * (Level ?? 1);
+                    long totalXP = baseXpPerAssignment * completedCount;
+                    
+                    // Grant the XP directly with a proper positive value
+                    EarnXP(totalXP, XpType.Quest, null, null, 0, null, ShareType.None);
+                    
+                    // Send XP notification message
+                    Session.Network.EnqueueSend(new GameMessageSystemChat($"You've earned {totalXP:N0} experience for completing {completedCount} exploration assignment{(completedCount != 1 ? "s" : "")}!", ChatMessageType.Broadcast));
+                }
+
+                // Calculate reward tier directly based on level ranges
+                // Simplified to match the 3 actual reward tiers in the code:
+                // Tier 1-2: Low tier rewards (levels 1-20)
+                // Tier 3-5: Mid tier rewards (levels 21-55)  
+                // Tier 6-7: High tier rewards (levels 56+)
+                int playerLevel = Level ?? 1;
+                int rewardTier;
+                
+                if (playerLevel <= 20)
+                {
+                    // Low tier rewards - use tier 1 (will trigger the <= 2 condition)
+                    rewardTier = 1;
+                }
+                else if (playerLevel <= 55)
+                {
+                    // Mid tier rewards - use tier 3 (will trigger the <= 5 condition)
+                    rewardTier = 3;
+                }
+                else
+                {
+                    // High tier rewards - use tier 6 (will trigger the else condition)
+                    rewardTier = 6;
+                }
+                
                 int rewardAmount;
 
                 // ASSIGNMENT 1 - COMPLETE BLOCK WITH TIERED REWARDS
@@ -281,21 +323,21 @@ namespace ACE.Server.WorldObjects
                     {
                         if (rewardTier <= 2)
                         {
-                            // Low tier rewards (levels 1-20ish)
+                            // Low tier rewards (levels 1-20)
                             GiveFromEmote(sourceObject, 116057);  // REPLACE WITH YOUR LOW TIER WCID #1
                             GiveFromEmote(sourceObject, 50182);  // REPLACE WITH YOUR LOW TIER WCID #2
                             GiveFromEmote(sourceObject, 4616);  // REPLACE WITH YOUR LOW TIER WCID #3
                         }
                         else if (rewardTier <= 5)
                         {
-                            // Mid tier rewards (levels 21-80ish) - YOUR CURRENT ITEMS
+                            // Mid tier rewards (levels 20-50) - YOUR CURRENT ITEMS
                             GiveFromEmote(sourceObject, 36518);
                             GiveFromEmote(sourceObject, 1115084);
                             GiveFromEmote(sourceObject, 44240111);
                         }
                         else
                         {
-                            // High tier rewards (levels 81-100+)
+                            // High tier rewards (levels 55+)
                             GiveFromEmote(sourceObject, 5084111);  // REPLACE WITH YOUR HIGH TIER WCID #1
                             GiveFromEmote(sourceObject, 20630);  // REPLACE WITH YOUR HIGH TIER WCID #2
                             GiveFromEmote(sourceObject, 50184);  // REPLACE WITH YOUR HIGH TIER WCID #3
@@ -321,21 +363,21 @@ namespace ACE.Server.WorldObjects
                     {
                         if (rewardTier <= 2)
                         {
-                            // Low tier rewards (levels 1-20ish)
+                            // Low tier rewards (levels 1-20)
                             GiveFromEmote(sourceObject, 116057);  // REPLACE WITH YOUR LOW TIER WCID #1
                             GiveFromEmote(sourceObject, 1115084);  // REPLACE WITH YOUR LOW TIER WCID #2
                             GiveFromEmote(sourceObject, 2225084);  // REPLACE WITH YOUR LOW TIER WCID #3
                         }
                         else if (rewardTier <= 5)
                         {
-                            // Mid tier rewards (levels 21-80ish) - YOUR CURRENT ITEMS
+                            // Mid tier rewards (levels 20-50) - YOUR CURRENT ITEMS
                             GiveFromEmote(sourceObject, 36518);
                             GiveFromEmote(sourceObject, 1115084);
                             GiveFromEmote(sourceObject, 44240111);
                         }
                         else
                         {
-                            // High tier rewards (levels 81-100+)
+                            // High tier rewards (levels 55+)
                             GiveFromEmote(sourceObject, 5084111);  // REPLACE WITH YOUR HIGH TIER WCID #1
                             GiveFromEmote(sourceObject, 20630);  // REPLACE WITH YOUR HIGH TIER WCID #2
                             GiveFromEmote(sourceObject, 50184);  // REPLACE WITH YOUR HIGH TIER WCID #3
@@ -361,21 +403,21 @@ namespace ACE.Server.WorldObjects
                     {
                         if (rewardTier <= 2)
                         {
-                            // Low tier rewards (levels 1-20ish)
+                            // Low tier rewards (levels 1-20)
                             GiveFromEmote(sourceObject, 116057);  // REPLACE WITH YOUR LOW TIER WCID #1
                             GiveFromEmote(sourceObject, 1115084);  // REPLACE WITH YOUR LOW TIER WCID #2
                             GiveFromEmote(sourceObject, 2225084);  // REPLACE WITH YOUR LOW TIER WCID #3
                         }
                         else if (rewardTier <= 5)
                         {
-                            // Mid tier rewards (levels 21-80ish) - YOUR CURRENT ITEMS
+                            // Mid tier rewards (levels 20-50) - YOUR CURRENT ITEMS
                             GiveFromEmote(sourceObject, 36518);
                             GiveFromEmote(sourceObject, 1115084);
                             GiveFromEmote(sourceObject, 44240111);
                         }
                         else
                         {
-                            // High tier rewards (levels 81-100+)
+                            // High tier rewards (levels 55+)
                             GiveFromEmote(sourceObject, 5084111);  // REPLACE WITH YOUR HIGH TIER WCID #1
                             GiveFromEmote(sourceObject, 20630);  // REPLACE WITH YOUR HIGH TIER WCID #2
                             GiveFromEmote(sourceObject, 50184);  // REPLACE WITH YOUR HIGH TIER WCID #3
