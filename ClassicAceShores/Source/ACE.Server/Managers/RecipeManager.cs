@@ -476,7 +476,7 @@ namespace ACE.Server.Managers
             var resistroll = ThreadSafeRandom.Next(1, 187);
             var meleedmg = ThreadSafeRandom.Next(1, 4); // the roll for flat dmg for iron
             var cfaldmg = ThreadSafeRandom.Next(1, 3); //1min 3 max loss to dmg if critical fail
-            var bowmoddmg = ThreadSafeRandom.Next(0.03f, 0.6f); // 1-2% bonus
+            var bowmoddmg = ThreadSafeRandom.Next(0.03f, 0.06f); // 1-2% bonus
             var bowmodfail = ThreadSafeRandom.Next(0.01f, 0.05f); // 1-5% failure amount
             var wandmodfail = ThreadSafeRandom.Next(0.001f, 0.007f); // .1% - .7% failure
             var wanddamage = ThreadSafeRandom.Next(0.002f, 0.007f); // .1% - .4% bonus
