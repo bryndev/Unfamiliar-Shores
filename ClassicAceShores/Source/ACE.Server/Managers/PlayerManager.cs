@@ -297,7 +297,7 @@ namespace ACE.Server.Managers
             playersLock.EnterReadLock();
             try
             {
-                return onlinePlayers.Values.Where(p => p.IsPK).Count();
+                return onlinePlayers.Values.Where(p => p.IsPK || p.IsPKL).Count();
             }
             finally
             {

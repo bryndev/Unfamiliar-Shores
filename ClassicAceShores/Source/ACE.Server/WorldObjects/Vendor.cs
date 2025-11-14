@@ -446,7 +446,7 @@ namespace ACE.Server.WorldObjects
         /// <param name="action">The action performed by the player</param>
         public void ApproachVendor(Player player, VendorType action = VendorType.Undef, uint altCurrencySpent = 0)
         {
-            if(VendorPKOnly && player.PlayerKillerStatus != PlayerKillerStatus.PK)
+            if(VendorPKOnly && player.PlayerKillerStatus != PlayerKillerStatus.PK && player.PlayerKillerStatus != PlayerKillerStatus.PKLite)
             {
                 player.Session.Network.EnqueueSend(new GameEventTell(this, "Come back when you're not under Asheron's protection or Bael'Zharon's respite.", player, ChatMessageType.Tell));
                 return;

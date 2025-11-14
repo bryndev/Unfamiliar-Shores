@@ -203,9 +203,9 @@ namespace ACE.Server.Managers
             NextEventManagerLongHeartbeat = Time.GetFutureUnixTime(EventManagerHeartbeatLongInterval);
 
             var smugglersDen = GetEventStatus("smugglersden");
-            if (smugglersDen == GameEventState.Off && PlayerManager.GetOnlinePKCount() >= 5)
+            if (smugglersDen == GameEventState.Off && PlayerManager.GetOnlinePKCount() >= 3)
                 StartEvent("smugglersden", null, null);
-            else if (smugglersDen == GameEventState.On && PlayerManager.GetOnlinePKCount() < 5)
+            else if (smugglersDen == GameEventState.On && PlayerManager.GetOnlinePKCount() < 3)
                 StopEvent("smugglersden", null, null);
         }
 
