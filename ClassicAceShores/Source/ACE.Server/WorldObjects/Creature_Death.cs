@@ -285,35 +285,41 @@ namespace ACE.Server.WorldObjects
             if (totalHealth == 0)
                 return;
 
-            // Killing or helping to kill much lower level players accrues vitae penalty, unless victim is 80+
+            // Killing or helping to kill players outside of +/- 7 levels accrues massive vitae penalty
             foreach (var kvp in DamageHistory.TotalDamage)
             {
                 var playerDamager = kvp.Value.TryGetAttacker() as Player;
-
                 if (playerDamager == null && kvp.Value.PetOwner != null)
                     playerDamager = kvp.Value.TryGetPetOwner();
-
                 if (playerDamager == null)
                     continue;
-
                 if (playerDamager == this)
                     continue;
-
                 var totalDamage = kvp.Value.TotalDamage;
-
                 var damagePercent = totalDamage / totalHealth;
-
                 var playerDamagerLevel = playerDamager.Level ?? 1;
                 levelDifference = Math.Abs(victimLevel - playerDamagerLevel);
 
-                if (!playerDamager.IsOnArenaLandblock && (victimLevel < playerDamagerLevel && victim.Level < 80 && levelDifference > 6))
+                // Apply penalty for killing anyone outside +/- 7 level range
+                if (!playerDamager.IsOnArenaLandblock && levelDifference > 7)
                 {
-                    var penalty = (int)Math.Ceiling((double)levelDifference * damagePercent);
+                    // Massive penalty scaling with level difference and damage contribution
+                    var penalty = (int)Math.Ceiling((double)(levelDifference * 3) * damagePercent);
                     playerDamager.InflictVitaePenalty(penalty);
-                    playerDamager.Session.Network.EnqueueSend(new GameMessageSystemChat("Your cowardly actions weaken your vitae.", ChatMessageType.Broadcast));
+
+                    // Different messages based on whether attacking higher or lower level
+                    if (victimLevel < playerDamagerLevel)
+                    {
+                        playerDamager.Session.Network.EnqueueSend(new GameMessageSystemChat($"Your cowardly attack on a weaker opponent weakens your vitae severely! (Level difference: {levelDifference})", ChatMessageType.Broadcast));
+                    }
+                    else
+                    {
+                        playerDamager.Session.Network.EnqueueSend(new GameMessageSystemChat($"Your reckless attack on a stronger opponent weakens your vitae severely! (Level difference: {levelDifference})", ChatMessageType.Broadcast));
+                    }
                 }
             }
         }
+
 
         public static int GetCreatureDeathXP(int level, int hitpoints = 0, bool usedSpells = false, bool usedRangedAttacks = false, int formulaVersion = 0)
         {
