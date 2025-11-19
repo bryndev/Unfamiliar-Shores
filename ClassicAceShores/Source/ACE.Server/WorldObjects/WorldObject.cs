@@ -1180,7 +1180,7 @@ namespace ACE.Server.WorldObjects
                 return Math.Max(ExtraSpellsMaxOverride ?? 0, 0);
 
             // Expanded: 1 slot per 1 Workmanship, double for robes
-            var baseSlots = (int)Math.Floor((ItemWorkmanship ?? 0) / 1.2f);
+            var baseSlots = (int)Math.Floor((ItemWorkmanship ?? 0) / 0.7f);
             if (ItemType == ItemType.Clothing && ClothingPriority.HasValue && ClothingPriority.Value.HasFlag(CoverageMask.OuterwearChest)) // Robes
                 return baseSlots == 0 ? 1 : (int)Math.Floor((double)baseSlots * .7);
             return baseSlots;

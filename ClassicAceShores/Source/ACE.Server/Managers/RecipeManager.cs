@@ -474,7 +474,7 @@ namespace ACE.Server.Managers
             var cfal = ThreadSafeRandom.Next(1, 25); // critical fail AL amount
             var modchance = ThreadSafeRandom.Next(1, 200);// the chance that a mod even will roll
             var resistroll = ThreadSafeRandom.Next(1, 187);
-            var meleedmg = ThreadSafeRandom.Next(1, 4); // the roll for flat dmg for iron
+            var meleedmg = ThreadSafeRandom.Next(1, 2); // the roll for flat dmg for iron
             var cfaldmg = ThreadSafeRandom.Next(1, 3); //1min 3 max loss to dmg if critical fail
             var bowmoddmg = ThreadSafeRandom.Next(0.03f, 0.06f); // 1-2% bonus
             var bowmodfail = ThreadSafeRandom.Next(0.01f, 0.05f); // 1-5% failure amount
@@ -487,86 +487,79 @@ namespace ACE.Server.Managers
             {
                 // armor tinkering
                 case MaterialType.Steel:
-                    if (modchance > 50) // 25% chance that an an extra mod bonus occurs
-                    {
-                        target.ArmorLevel += 65;
-                        player.Session.Network.EnqueueSend(new GameMessageSystemChat($"No mod chance roll. Better luck next time. New Target AL {target.ArmorLevel}(+25)", ChatMessageType.Broadcast));
-                    }
-                    else
+                    // Always apply base +55 AL
+                    target.ArmorLevel += 55;
+                    
+                    if (modchance <= 50) // 25% chance for additional bonus modifications
                     {
                         if (xtramodroll <= 200)
                         {
-                            var alresult = 55 + alamountlow;
-                            target.ArmorLevel += 55 + alamountlow;
-                            player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Not so lucky, but you also gained {alamountlow} extra AL! New Target AL {target.ArmorLevel}(+{alresult})", ChatMessageType.Broadcast));
+                            target.ArmorLevel += alamountlow;
+                            player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Not so lucky, but you also gained {alamountlow} extra AL! New Target AL {target.ArmorLevel}(+{55 + alamountlow})", ChatMessageType.Broadcast));
                         }
                         else if (xtramodroll >= 201 && xtramodroll <= 251) // rolls for resistance mods.
                         {
                             if (resistroll >= 1 && resistroll <= 20) // pierce
                             {
-                                target.ArmorLevel += 55;
                                 target.ArmorModVsPierce = Math.Min((target.ArmorModVsPierce ?? 0) + 0.2f, 2.0f);
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Not so lucky, but you also gained an extra 20% Piercing resistance to your armor. {target.ArmorLevel}(+25)", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Not so lucky, but you also gained an extra 20% Piercing resistance to your armor. {target.ArmorLevel}(+55)", ChatMessageType.Broadcast));
                             }
                             else if (resistroll >= 21 && resistroll <= 41) // slash
                             {
-                                target.ArmorLevel += 55;
                                 target.ArmorModVsSlash = Math.Min((target.ArmorModVsSlash ?? 0) + 0.2f, 2.0f);
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Not so lucky, but you also gained an extra 20% Slashing resistance to your armor. {target.ArmorLevel}(+25)", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Not so lucky, but you also gained an extra 20% Slashing resistance to your armor. {target.ArmorLevel}(+55)", ChatMessageType.Broadcast));
                             }
                             else if (resistroll >= 42 && resistroll <= 62) // bludge
                             {
-                                target.ArmorLevel += 55;
                                 target.ArmorModVsBludgeon = Math.Min((target.ArmorModVsBludgeon ?? 0) + 0.2f, 2.0f);
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Not so lucky, but you also gained an extra 20% Bludgeon resistance to your armor. {target.ArmorLevel}(+25)", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Not so lucky, but you also gained an extra 20% Bludgeon resistance to your armor. {target.ArmorLevel}(+55)", ChatMessageType.Broadcast));
                             }
                             else if (resistroll >= 63 && resistroll <= 83) // acid
                             {
-                                target.ArmorLevel += 55;
                                 target.ArmorModVsAcid = Math.Min((target.ArmorModVsAcid ?? 0) + 0.4f, 2.0f);
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Not so lucky, but you also gained an extra 40% Acid resistance to your armor. {target.ArmorLevel}(+25)", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Not so lucky, but you also gained an extra 40% Acid resistance to your armor. {target.ArmorLevel}(+55)", ChatMessageType.Broadcast));
                             }
                             else if (resistroll >= 84 && resistroll <= 104) // fire
                             {
-                                target.ArmorLevel += 55;
                                 target.ArmorModVsFire = Math.Min((target.ArmorModVsFire ?? 0) + 0.4f, 2.0f);
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Not so lucky, but you also gained an extra 40% Fire resistance to your armor. {target.ArmorLevel}(+25)", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Not so lucky, but you also gained an extra 40% Fire resistance to your armor. {target.ArmorLevel}(+55)", ChatMessageType.Broadcast));
                             }
                             else if (resistroll >= 105 && resistroll <= 125) // cold
                             {
-                                target.ArmorLevel += 55;
                                 target.ArmorModVsCold = Math.Min((target.ArmorModVsCold ?? 0) + 0.4f, 2.0f);
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Not so lucky, but you also gained an extra 40% Cold resistance to your armor. {target.ArmorLevel}(+25)", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Not so lucky, but you also gained an extra 40% Cold resistance to your armor. {target.ArmorLevel}(+55)", ChatMessageType.Broadcast));
                             }
                             else if (resistroll >= 126 && resistroll <= 146) // lightning
                             {
-                                target.ArmorLevel += 55;
                                 target.ArmorModVsElectric = Math.Min((target.ArmorModVsElectric ?? 0) + 0.4f, 2.0f);
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Not so lucky, but you also gained an extra 40% Lightning resistance to your armor. {target.ArmorLevel}(+25)", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Not so lucky, but you also gained an extra 40% Lightning resistance to your armor. {target.ArmorLevel}(+55)", ChatMessageType.Broadcast));
                             }
                             else if (resistroll >= 147 && resistroll <= 167) // Nether
                             {
-                                target.ArmorLevel += 55;
                                 target.ArmorModVsNether = Math.Min((target.ArmorModVsNether ?? 0) + 0.4f, 2.0f);
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Not so lucky, but you also gained an extra 40% Nether resistance to your armor. {target.ArmorLevel}(+25)", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Not so lucky, but you also gained an extra 40% Nether resistance to your armor. {target.ArmorLevel}(+55)", ChatMessageType.Broadcast));
                             }
                         }
                         else if (xtramodroll >= 252 && xtramodroll <= 297)
                         {
                             target.ArmorLevel -= cfal;
-                            player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Critical failure! You lost {cfal} to your {target.NameWithMaterial} total AL. New Target AL {target.ArmorLevel}(-{cfal}).", ChatMessageType.Broadcast));
+                            player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Critical failure! You lost {cfal} to your {target.NameWithMaterial} total AL. New Target AL {target.ArmorLevel}(+{55 - cfal}).", ChatMessageType.Broadcast));
                         }
-
                         else if (xtramodroll == 298)
                         {
-                            target.ArmorLevel += 80;
+                            target.ArmorLevel += 25;
                             PlayerManager.BroadcastToAll(new GameMessageSystemChat($"{player.Name} Rolled a {xtramodroll}!! They just got super lucky applying steel to an item! Triple Value! New Target AL {target.ArmorLevel}(+80)", ChatMessageType.Broadcast));
                         }
                         else if (xtramodroll >= 299)
                         {
                             target.SetProperty(PropertyInt.Bonded, 1);
-                            PlayerManager.BroadcastToAll(new GameMessageSystemChat($"{player.Name} Rolled a perfect {xtramodroll}!! They just got super lucky applying steel to their {target.NameWithMaterial}! The item is now bonded", ChatMessageType.Broadcast));
+                            PlayerManager.BroadcastToAll(new GameMessageSystemChat($"{player.Name} Rolled a perfect {xtramodroll}!! They just got super lucky applying steel to their {target.NameWithMaterial}! The item is now bonded and has +55 AL", ChatMessageType.Broadcast));
                         }
+                    }
+                    else
+                    {
+                        // 75% of the time - just base effect with message
+                        player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Base AL applied. New Target AL {target.ArmorLevel}(+55)", ChatMessageType.Broadcast));
                     }
                     break;
                 case MaterialType.Alabaster:
@@ -670,6 +663,8 @@ namespace ACE.Server.Managers
                     break;
 
                 case MaterialType.GreenGarnet:
+                    // Always apply base +1% elemental damage mod
+                    target.ElementalDamageMod += 0.01f;
 
                     if (modchance <= 60) // 30% chance to even roll a mod to begin with
                     {
@@ -729,7 +724,7 @@ namespace ACE.Server.Managers
                         {
                             if (target.GetProperty(PropertyFloat.ElementalDamageMod) == null)
                             {
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Critical failure! The salvage applies poorly and does nothing!", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Rolled {xtramodroll}. Critical failure! The salvage applies poorly but you still get the base bonus. Total: {target.ElementalDamageMod:N3}(+1%)", ChatMessageType.Broadcast));
                             }
                             else
                             {
@@ -748,7 +743,7 @@ namespace ACE.Server.Managers
                             else if (resistroll >= 61 && resistroll <= 120) // melee d
                             {
                                 target.WeaponDefense += 0.01f;
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"You rolled {xtramodroll}. You got bonus Melee Defense {target.WeaponDefense:N2}(+1%)", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"You rolled {xtramodroll}. You got bonus Melee Defense {target.WeaponDefense:N2}(+1%) and base damage", ChatMessageType.Broadcast));
                             }
                             else if (resistroll >= 121 && resistroll <= 187) // elemental bonus + upgrade to
                             {
@@ -822,7 +817,7 @@ namespace ACE.Server.Managers
                                 target.SetProperty(PropertyFloat.ResistanceModifier, 1);
                                 target.SetProperty(PropertyInt.ResistanceModifierType, 1);
                                 target.ElementalDamageMod += 0.01f;
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You got lucky applying Green Garnet to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Slashing", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You got lucky applying Green Garnet to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Slashing and base damage mod", ChatMessageType.Broadcast));
                             }
                             else if (dmgtype == 2 && target.GetProperty(PropertyInt.ResistanceModifierType) == null && !target.HasImbuedEffect(ImbuedEffectType.PierceRending))
                             {
@@ -886,14 +881,14 @@ namespace ACE.Server.Managers
                             {
                                 target.ElementalDamageMod += 0.01f;
                                 target.SetProperty(PropertyFloat.CriticalFrequency, 0.10); // flat 10%?
-                                PlayerManager.BroadcastToAll(new GameMessageSystemChat($"[TINKERING] {player.Name} just got super lucky applying Green Garnet to their {target.NameWithMaterial}! The item now has Biting Strike!", ChatMessageType.Broadcast));
+                                PlayerManager.BroadcastToAll(new GameMessageSystemChat($"[TINKERING] {player.Name} just got super lucky applying Green Garnet to their {target.NameWithMaterial}! The item now has Biting Strike and base damage mod!", ChatMessageType.Broadcast));
                             }
                             // Critical Blow
                             else if (resistroll >= 95 && resistroll <= 187 && target.GetProperty(PropertyFloat.CriticalMultiplier) == null)
                             {
                                 target.ElementalDamageMod += 0.01f;
                                 target.SetProperty(PropertyFloat.CriticalMultiplier, 1.2); // is this really 1.2x? 20%?
-                                PlayerManager.BroadcastToAll(new GameMessageSystemChat($"[TINKERING] {player.Name} just got super lucky applying Green Garnet to their {target.NameWithMaterial}! The item now has Crushing Blow!", ChatMessageType.Broadcast));
+                                PlayerManager.BroadcastToAll(new GameMessageSystemChat($"[TINKERING] {player.Name} just got super lucky applying Green Garnet to their {target.NameWithMaterial}! The item now has Crushing Blow and base damage mod!", ChatMessageType.Broadcast));
                             }
                             else
                             {
@@ -902,10 +897,17 @@ namespace ACE.Server.Managers
                             }
                         }
                     }
+                    else
+                    {
+                        // 70% of the time - just base effect with message
+                        player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Base damage mod applied. New Target Damage Mod {target.ElementalDamageMod:N3}(+1%)", ChatMessageType.Broadcast));
+                    }
                     break;
                 // weapon tinkering
 
                 case MaterialType.Iron:
+                    // Always apply base +3 damage
+                    target.Damage += 3;
 
                     if (modchance <= 70) // 38% chance to even roll a mod to begin with
                     {
@@ -942,7 +944,7 @@ namespace ACE.Server.Managers
                             {
                                 target.Damage += 3;
                                 target.WeaponMagicDefense += .05;
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"You rolled {xtramodroll}, Not bad! You gained bonus Magic Defense {target.WeaponMagicDefense:N2}(+5%)", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"You rolled {xtramodroll}, Not bad! You gained bonus Magic Defense {target.WeaponMagicDefense:N2}(+5%) and base damage", ChatMessageType.Broadcast));
                             }
                             else if (resistroll >= 61 && resistroll <= 120) // melee d
                             {
@@ -954,7 +956,7 @@ namespace ACE.Server.Managers
                             {
                                 target.Damage += 3;
                                 target.WeaponOffense += 0.05f;
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"You rolled {xtramodroll}. You got bonus Attack Mod {target.WeaponOffense:N2}(+5%)", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"You rolled {xtramodroll}. You got bonus Attack Mod {target.WeaponOffense:N2}(+5%) and base damage", ChatMessageType.Broadcast));
                             }
                         }// 6%
                         // Resistance Cleaving
@@ -967,14 +969,14 @@ namespace ACE.Server.Managers
                                 target.SetProperty(PropertyFloat.ResistanceModifier, 1);
                                 target.SetProperty(PropertyInt.ResistanceModifierType, 1);
                                 target.Damage += 3;
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You just got lucky applying iron to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Slashing", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You just got lucky applying iron to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Slashing and base damage", ChatMessageType.Broadcast));
                             }
                             else if (dmgtype == 2 && target.GetProperty(PropertyInt.ResistanceModifierType) == null && !target.HasImbuedEffect(ImbuedEffectType.PierceRending))
                             {
                                 target.SetProperty(PropertyFloat.ResistanceModifier, 1);
                                 target.SetProperty(PropertyInt.ResistanceModifierType, 2);
                                 target.Damage += 3;
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You just got lucky applying iron to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Piercing", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You just got lucky applying iron to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Piercing and base damage", ChatMessageType.Broadcast));
                             }
                             else if (dmgtype == 3 && target.GetProperty(PropertyInt.ResistanceModifierType) == null && !target.HasImbuedEffect(ImbuedEffectType.PierceRending) && !target.HasImbuedEffect(ImbuedEffectType.SlashRending))
                             {
@@ -984,14 +986,14 @@ namespace ACE.Server.Managers
                                     target.SetProperty(PropertyFloat.ResistanceModifier, 1);
                                     target.SetProperty(PropertyInt.ResistanceModifierType, 1);
                                     target.Damage += 3;
-                                    player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You just got lucky applying iron to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Slashing", ChatMessageType.Broadcast));
+                                    player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You just got lucky applying iron to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Slashing and base damage", ChatMessageType.Broadcast));
                                 }
                                 else if (halfchance >= 51 && halfchance <= 100)
                                 {
                                     target.SetProperty(PropertyFloat.ResistanceModifier, 1);
                                     target.SetProperty(PropertyInt.ResistanceModifierType, 2);
                                     target.Damage += 3;
-                                    player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You just got lucky applying iron to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Piercing", ChatMessageType.Broadcast));
+                                    player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You just got lucky applying iron to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Piercing and base damage", ChatMessageType.Broadcast));
                                 }
                             }
                             else if (dmgtype == 4 && target.GetProperty(PropertyInt.ResistanceModifierType) == null && !target.HasImbuedEffect(ImbuedEffectType.BludgeonRending))
@@ -999,40 +1001,40 @@ namespace ACE.Server.Managers
                                 target.SetProperty(PropertyFloat.ResistanceModifier, 1);
                                 target.SetProperty(PropertyInt.ResistanceModifierType, 4);
                                 target.Damage += 3;
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You just got lucky applying iron to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Bludgeon", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You just got lucky applying iron to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Bludgeon and base damage", ChatMessageType.Broadcast));
                             }
                             else if (dmgtype == 8 && target.GetProperty(PropertyInt.ResistanceModifierType) == null && !target.HasImbuedEffect(ImbuedEffectType.ColdRending))
                             {
                                 target.SetProperty(PropertyFloat.ResistanceModifier, 1);
                                 target.SetProperty(PropertyInt.ResistanceModifierType, 8);
                                 target.Damage += 3;
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You just got lucky applying iron to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Cold", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You just got lucky applying iron to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Cold and base damage", ChatMessageType.Broadcast));
                             }
                             else if (dmgtype == 16 && target.GetProperty(PropertyInt.ResistanceModifierType) == null && !target.HasImbuedEffect(ImbuedEffectType.FireRending))
                             {
                                 target.SetProperty(PropertyFloat.ResistanceModifier, 1);
                                 target.SetProperty(PropertyInt.ResistanceModifierType, 16);
                                 target.Damage += 3;
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You just got lucky applying iron to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Fire", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You just got lucky applying iron to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Fire and base damage", ChatMessageType.Broadcast));
                             }
                             else if (dmgtype == 32 && target.GetProperty(PropertyInt.ResistanceModifierType) == null && !target.HasImbuedEffect(ImbuedEffectType.AcidRending))
                             {
                                 target.SetProperty(PropertyFloat.ResistanceModifier, 1);
                                 target.SetProperty(PropertyInt.ResistanceModifierType, 32);
                                 target.Damage += 3;
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You just got lucky applying iron to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Acid", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You just got lucky applying iron to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Acid and base damage", ChatMessageType.Broadcast));
                             }
                             else if (dmgtype == 64 && target.GetProperty(PropertyInt.ResistanceModifierType) == null && !target.HasImbuedEffect(ImbuedEffectType.ElectricRending))
                             {
                                 target.SetProperty(PropertyFloat.ResistanceModifier, 1);
                                 target.SetProperty(PropertyInt.ResistanceModifierType, 64);
                                 target.Damage += 3;
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You just got lucky applying iron to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Electric", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"[TINKERING] You just got lucky applying iron to your {target.NameWithMaterial}! The item now has Resistance Cleaving: Electric and base damage", ChatMessageType.Broadcast));
                             }
                             else if (target.GetProperty(PropertyInt.ResistanceModifierType) != null)
                             {
                                 target.Damage += 3;
-                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"No mod chance roll. Better luck next time. New Target Damage {target.Damage}(+3)", ChatMessageType.Broadcast));
+                                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Base damage applied. New Target Damage {target.Damage}(+3)", ChatMessageType.Broadcast));
                             }
                         }//8%
                          // Special Properties ArmorCleaving /*Cleave*/, BS, CB, ETC
@@ -1056,29 +1058,34 @@ namespace ACE.Server.Managers
                             {
                                 target.Damage += 3;
                                 target.SetProperty(PropertyBool.IgnoreMagicArmor, true);
-                                PlayerManager.BroadcastToAll(new GameMessageSystemChat($"[TINKERING] {player.Name} just got super lucky applying iron to their {target.NameWithMaterial}! The item now ignores Partial armor values!", ChatMessageType.Broadcast));
+                                PlayerManager.BroadcastToAll(new GameMessageSystemChat($"[TINKERING] {player.Name} just got super lucky applying iron to their {target.NameWithMaterial}! The item now ignores Partial armor values and has base damage!", ChatMessageType.Broadcast));
                             }
                             else if (resistroll >= 31 && resistroll <= 61 && target.GetProperty(PropertyBool.IgnoreMagicResist) == null)
                             {
                                 target.Damage += 3;
                                 target.SetProperty(PropertyBool.IgnoreMagicResist, true);
-                                PlayerManager.BroadcastToAll(new GameMessageSystemChat($"[TINKERING] {player.Name} just got super lucky applying iron to their {target.NameWithMaterial}! The item now has ignores partial magical protections!", ChatMessageType.Broadcast));
+                                PlayerManager.BroadcastToAll(new GameMessageSystemChat($"[TINKERING] {player.Name} just got super lucky applying iron to their {target.NameWithMaterial}! The item now has ignores partial magical protections and has base damage!", ChatMessageType.Broadcast));
                             }
                             // biting Strike
                             if (resistroll >= 62 && resistroll <= 92 && target.GetProperty(PropertyFloat.CriticalFrequency) == null)
                             {
                                 target.Damage += 3;
                                 target.SetProperty(PropertyFloat.CriticalFrequency, 0.13);
-                                PlayerManager.BroadcastToAll(new GameMessageSystemChat($"[TINKERING] {player.Name} just got super lucky applying iron to their {target.NameWithMaterial}! The item now has Biting Strike!", ChatMessageType.Broadcast));
+                                PlayerManager.BroadcastToAll(new GameMessageSystemChat($"[TINKERING] {player.Name} just got super lucky applying iron to their {target.NameWithMaterial}! The item now has Biting Strike and base damage!", ChatMessageType.Broadcast));
                             }
                             // Critical Blow
                             else if (resistroll >= 93 && resistroll <= 123 && target.GetProperty(PropertyFloat.CriticalMultiplier) == null)
                             {
                                 target.Damage += 3;
                                 target.SetProperty(PropertyFloat.CriticalMultiplier, 3);
-                                PlayerManager.BroadcastToAll(new GameMessageSystemChat($"[TINKERING] {player.Name} just got super lucky applying iron to their {target.NameWithMaterial}! The item now has Crushing Blow!", ChatMessageType.Broadcast));
+                                PlayerManager.BroadcastToAll(new GameMessageSystemChat($"[TINKERING] {player.Name} just got super lucky applying iron to their {target.NameWithMaterial}! The item now has Crushing Blow and base damage!", ChatMessageType.Broadcast));
                             }
                         }
+                    }
+                    else
+                    {
+                        // 62% of the time - just base effect with message
+                        player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Base damage applied. New Target Damage {target.Damage}(+3)", ChatMessageType.Broadcast));
                     }
                     break;
 
