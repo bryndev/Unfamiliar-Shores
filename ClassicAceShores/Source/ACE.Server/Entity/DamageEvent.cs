@@ -625,11 +625,11 @@ namespace ACE.Server.Entity
                             pvpDamageCapPercentageMaxHealth = 0.65f;
                             break;
                         case Skill.LifeMagic:
-                            pvpMod *= (float)PropertyManager.GetInterpolatedDouble(playerAttacker.Level ?? 1, "pvp_dmg_mod_low_thrown", "pvp_dmg_mod_high_thrown", "pvp_dmg_mod_low_level", "pvp_dmg_mod_high_level");
+                            pvpMod *= (float)PropertyManager.GetInterpolatedDouble(playerAttacker.Level ?? 1, "pvp_dmg_mod_low_life", "pvp_dmg_mod_high_life", "pvp_dmg_mod_low_level", "pvp_dmg_mod_high_level");
                             pvpDamageCapPercentageMaxHealth = 0.65f;
                             break;
                         case Skill.WarMagic:
-                            pvpMod *= (float)PropertyManager.GetInterpolatedDouble(playerAttacker.Level ?? 1, "pvp_dmg_mod_low_thrown", "pvp_dmg_mod_high_thrown", "pvp_dmg_mod_low_level", "pvp_dmg_mod_high_level");
+                            pvpMod *= (float)PropertyManager.GetInterpolatedDouble(playerAttacker.Level ?? 1, "pvp_dmg_mod_low_war", "pvp_dmg_mod_high_war", "pvp_dmg_mod_low_level", "pvp_dmg_mod_high_level");
                             pvpDamageCapPercentageMaxHealth = 0.65f;
                             break;
                     }

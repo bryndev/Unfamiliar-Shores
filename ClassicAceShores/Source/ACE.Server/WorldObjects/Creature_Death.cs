@@ -301,10 +301,10 @@ namespace ACE.Server.WorldObjects
                 levelDifference = Math.Abs(victimLevel - playerDamagerLevel);
 
                 // Apply penalty for killing anyone outside +/- 7 level range
-                if (!playerDamager.IsOnArenaLandblock && levelDifference > 7)
+                if (!playerDamager.IsOnArenaLandblock && levelDifference > 6)
                 {
                     // Massive penalty scaling with level difference and damage contribution
-                    var penalty = (int)Math.Ceiling((double)(levelDifference * 3) * damagePercent);
+                    var penalty = (int)Math.Ceiling((double)(levelDifference * 6) * damagePercent);
                     playerDamager.InflictVitaePenalty(penalty);
 
                     // Different messages based on whether attacking higher or lower level
