@@ -175,7 +175,7 @@ namespace ACE.Server.WorldObjects
                 TimeToRot = EmptyDecayTime;
             else
                 // a player corpse decays after 5 mins * playerLevel with a minimum of 1 hour
-                TimeToRot = Math.Max(3600, (player.Level ?? 1) * 300);
+                TimeToRot = Math.Max(3600, (player.Level ?? 1) * 600);
 
             var dtTimeToRot = DateTime.UtcNow.AddSeconds(TimeToRot ?? 0);
             var tsDecay = dtTimeToRot - DateTime.UtcNow;
@@ -230,7 +230,7 @@ namespace ACE.Server.WorldObjects
                     return true;
 
                 // allow everyone to open hardcore PvP corpses 5 minutes after death.
-                if (Time.GetUnixTime() >= DeathTimestamp + 300)
+                if (Time.GetUnixTime() >= DeathTimestamp + 60)
                     return true;
             }
 
@@ -282,7 +282,7 @@ namespace ACE.Server.WorldObjects
         /// <summary>
         /// The number of seconds before all players can loot a monster corpse
         /// </summary>
-        public static int HalfLife = 180;
+        public static int HalfLife = 20;
 
 
         public override void Close(Player player)

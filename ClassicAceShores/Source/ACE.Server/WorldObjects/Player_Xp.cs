@@ -275,7 +275,7 @@ namespace ACE.Server.WorldObjects
                     }
                     else if (xpType == XpType.Kill)
                     {
-                        if (CurrentLandblock != null && EventManager.HotDungeonLandblock == CurrentLandblock.Id.Raw >> 16)
+                        if (CurrentLandblock != null && (EventManager.Tier1HotDungeonLandblock == CurrentLandblock.Id.Raw >> 16 || EventManager.Tier2HotDungeonLandblock == CurrentLandblock.Id.Raw >> 16))
                         {
                             var extraXP = m_amount * (float)PropertyManager.GetDouble("hot_dungeon_bonus_xp").Item;
                             totalExtraXP += extraXP;

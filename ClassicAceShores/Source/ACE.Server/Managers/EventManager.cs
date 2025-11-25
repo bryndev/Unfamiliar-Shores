@@ -209,11 +209,84 @@ namespace ACE.Server.Managers
                 StopEvent("smugglersden", null, null);
         }
 
-        public static int HotDungeonLandblock = 0;
-        public static string HotDungeonName = "";
-        public static string HotDungeonDescription = "";
+        public static int Tier1HotDungeonLandblock = 0;
+        public static string Tier1HotDungeonName = "";
+        public static string Tier1HotDungeonDescription = "";
+        public static double NextTier1HotDungeonEnd = 0;
+
+        public static int Tier2HotDungeonLandblock = 0;
+        public static string Tier2HotDungeonName = "";
+        public static string Tier2HotDungeonDescription = "";
+        public static double NextTier2HotDungeonEnd = 0;
+
         public static double NextHotDungeonRoll = 0;
-        public static double NextHotDungeonEnd = 0;
+
+        // Backward compatibility properties - intelligently combine both tiers
+        public static int HotDungeonLandblock
+        {
+            get
+            {
+                // Return Tier1 if active, else Tier2 if active, else 0
+                if (Tier1HotDungeonLandblock != 0)
+                    return Tier1HotDungeonLandblock;
+                else if (Tier2HotDungeonLandblock != 0)
+                    return Tier2HotDungeonLandblock;
+                else
+                    return 0;
+            }
+        }
+
+        public static string HotDungeonName
+        {
+            get
+            {
+                if (Tier1HotDungeonLandblock != 0 && Tier2HotDungeonLandblock != 0)
+                    return $"Tier 1: {Tier1HotDungeonName} | Tier 2: {Tier2HotDungeonName}";
+                else if (Tier1HotDungeonLandblock != 0)
+                    return Tier1HotDungeonName;
+                else if (Tier2HotDungeonLandblock != 0)
+                    return Tier2HotDungeonName;
+                else
+                    return "";
+            }
+        }
+
+        public static string HotDungeonDescription
+        {
+            get
+            {
+                var descriptions = new List<string>();
+                
+                if (Tier1HotDungeonLandblock != 0 && !string.IsNullOrEmpty(Tier1HotDungeonDescription))
+                    descriptions.Add(Tier1HotDungeonDescription);
+                
+                if (Tier2HotDungeonLandblock != 0 && !string.IsNullOrEmpty(Tier2HotDungeonDescription))
+                    descriptions.Add(Tier2HotDungeonDescription);
+
+                if (descriptions.Count == 0)
+                    return "";
+                else if (descriptions.Count == 1)
+                    return descriptions[0];
+                else
+                    return string.Join("\n", descriptions);
+            }
+        }
+
+        public static double NextHotDungeonEnd
+        {
+            get
+            {
+                // Return the earliest end time of active dungeons
+                if (NextTier1HotDungeonEnd != 0 && NextTier2HotDungeonEnd != 0)
+                    return Math.Min(NextTier1HotDungeonEnd, NextTier2HotDungeonEnd);
+                else if (NextTier1HotDungeonEnd != 0)
+                    return NextTier1HotDungeonEnd;
+                else if (NextTier2HotDungeonEnd != 0)
+                    return NextTier2HotDungeonEnd;
+                else
+                    return 0;
+            }
+        }
 
         private static double HotDungeonInterval = 7800;
         private static double HotDungeonDuration = 7200;
@@ -224,20 +297,37 @@ namespace ACE.Server.Managers
             if (Common.ConfigManager.Config.Server.WorldRuleset != Common.Ruleset.CustomDM)
                 return;
 
-            if (NextHotDungeonEnd != 0 && NextHotDungeonEnd > currentUnixTime)
-                return;
-
-            NextHotDungeonEnd = 0;
-            if (HotDungeonLandblock != 0)
+            // Check Tier 1 expiration
+            if (NextTier1HotDungeonEnd != 0 && NextTier1HotDungeonEnd <= currentUnixTime)
             {
-                var msg = $"{HotDungeonName} is no longer giving extra experience rewards.";
-                PlayerManager.BroadcastToAll(new GameMessageSystemChat(msg, ChatMessageType.WorldBroadcast));
-                PlayerManager.LogBroadcastChat(Channel.AllBroadcast, null, msg);
+                NextTier1HotDungeonEnd = 0;
+                if (Tier1HotDungeonLandblock != 0)
+                {
+                    var msg = $"[Tier 1] {Tier1HotDungeonName} is no longer giving extra experience rewards.";
+                    PlayerManager.BroadcastToAll(new GameMessageSystemChat(msg, ChatMessageType.WorldBroadcast));
+                    PlayerManager.LogBroadcastChat(Channel.AllBroadcast, null, msg);
+                }
+
+                Tier1HotDungeonLandblock = 0;
+                Tier1HotDungeonName = "";
+                Tier1HotDungeonDescription = "";
             }
 
-            HotDungeonLandblock = 0;
-            HotDungeonName = "";
-            HotDungeonDescription = "";
+            // Check Tier 2 expiration
+            if (NextTier2HotDungeonEnd != 0 && NextTier2HotDungeonEnd <= currentUnixTime)
+            {
+                NextTier2HotDungeonEnd = 0;
+                if (Tier2HotDungeonLandblock != 0)
+                {
+                    var msg = $"[Tier 2] {Tier2HotDungeonName} is no longer giving extra experience rewards.";
+                    PlayerManager.BroadcastToAll(new GameMessageSystemChat(msg, ChatMessageType.WorldBroadcast));
+                    PlayerManager.LogBroadcastChat(Channel.AllBroadcast, null, msg);
+                }
+
+                Tier2HotDungeonLandblock = 0;
+                Tier2HotDungeonName = "";
+                Tier2HotDungeonDescription = "";
+            }
 
             if (NextHotDungeonRoll > currentUnixTime)
                 return;
@@ -258,7 +348,16 @@ namespace ACE.Server.Managers
             if (Common.ConfigManager.Config.Server.WorldRuleset != Common.Ruleset.CustomDM)
                 return;
 
-            NextHotDungeonEnd = Time.GetFutureUnixTime(PropertyManager.GetDouble("hot_dungeon_duration").Item);
+            if (Tier1HotDungeonLandblock != 0)
+            {
+                NextTier1HotDungeonEnd = Time.GetFutureUnixTime(PropertyManager.GetDouble("hot_dungeon_duration").Item);
+            }
+
+            if (Tier2HotDungeonLandblock != 0)
+            {
+                NextTier2HotDungeonEnd = Time.GetFutureUnixTime(PropertyManager.GetDouble("hot_dungeon_duration").Item);
+            }
+
             NextHotDungeonRoll = Time.GetFutureUnixTime(PropertyManager.GetDouble("hot_dungeon_interval").Item);
 
             var msg = $"The current extra experience dungeon duration has been prolonged!";
@@ -277,24 +376,56 @@ namespace ACE.Server.Managers
 
             if (onlinePlayers.Count > 0 || forceLandblock != 0)
             {
-                var averageLevel = 0;
-                var godCharactersCount = 0;
+                // Separate players into Tier 1 (1-50) and Tier 2 (51+)
+                var tier1Players = new List<Player>();
+                var tier2Players = new List<Player>();
+
                 foreach (var player in onlinePlayers)
                 {
-                    if (player.GodState == null)
-                        averageLevel += player.Level ?? 1;
-                    else
-                        godCharactersCount++;
-                }
-                var onlineMinusGods = onlinePlayers.Count - godCharactersCount;
+                    if (player.GodState != null)
+                        continue;
 
-                if (onlineMinusGods > 0 || forceLandblock != 0)
+                    var level = player.Level ?? 1;
+                    if (level <= 50)
+                        tier1Players.Add(player);
+                    else
+                        tier2Players.Add(player);
+                }
+
+                // Roll Tier 1 Hot Dungeon
+                if (tier1Players.Count > 0 || forceLandblock != 0)
+                {
+                    RollTierHotDungeon(tier1Players, forceLandblock, 1);
+                }
+
+                // Roll Tier 2 Hot Dungeon
+                if (tier2Players.Count > 0 || forceLandblock != 0)
+                {
+                    RollTierHotDungeon(tier2Players, forceLandblock, 2);
+                }
+            }
+        }
+
+        private static void RollTierHotDungeon(List<Player> tierPlayers, ushort forceLandblock, int tier)
+        {
+            if (tierPlayers.Count > 0 || forceLandblock != 0)
+            {
+                var averageLevel = 0;
+                foreach (var player in tierPlayers)
+                {
+                    averageLevel += player.Level ?? 1;
+                }
+
+                if (tierPlayers.Count > 0 || forceLandblock != 0)
                 {
                     List<ExplorationSite> possibleDungeonList;
 
                     if (forceLandblock == 0)
                     {
-                        averageLevel /= onlineMinusGods;
+                        if (tierPlayers.Count > 0)
+                            averageLevel /= tierPlayers.Count;
+                        else
+                            averageLevel = tier == 1 ? 25 : 75; // Default average for empty tier
 
                         var minLevel = Math.Max(averageLevel - (int)(averageLevel * 0.1f), 1);
                         var maxLevel = averageLevel + (int)(averageLevel * 0.2f);
@@ -323,27 +454,32 @@ namespace ACE.Server.Managers
                             dungeonDirections = "at an unknown location";
                         }
 
-                        HotDungeonLandblock = dungeon.Landblock;
-                        HotDungeonName = dungeonName;
-
                         var dungeonLevel = Math.Clamp(dungeon.Level, dungeon.MinLevel, dungeon.MaxLevel != 0 ? dungeon.MaxLevel : int.MaxValue);
-                        HotDungeonDescription = $"Extra experience rewards dungeon: {dungeonName} located {dungeonDirections}. Dungeon level: {dungeonLevel:N0}.";
 
-                        NextHotDungeonEnd = Time.GetFutureUnixTime(PropertyManager.GetDouble("hot_dungeon_duration").Item);
-                        NextHotDungeonRoll = Time.GetFutureUnixTime(PropertyManager.GetDouble("hot_dungeon_interval").Item);
+                        if (tier == 1)
+                        {
+                            Tier1HotDungeonLandblock = dungeon.Landblock;
+                            Tier1HotDungeonName = dungeonName;
+                            Tier1HotDungeonDescription = $"[Tier 1] Extra experience rewards dungeon: {dungeonName} located {dungeonDirections}. Dungeon level: {dungeonLevel:N0}.";
+                            NextTier1HotDungeonEnd = Time.GetFutureUnixTime(PropertyManager.GetDouble("hot_dungeon_duration").Item);
+                        }
+                        else
+                        {
+                            Tier2HotDungeonLandblock = dungeon.Landblock;
+                            Tier2HotDungeonName = dungeonName;
+                            Tier2HotDungeonDescription = $"[Tier 2] Extra experience rewards dungeon: {dungeonName} located {dungeonDirections}. Dungeon level: {dungeonLevel:N0}.";
+                            NextTier2HotDungeonEnd = Time.GetFutureUnixTime(PropertyManager.GetDouble("hot_dungeon_duration").Item);
+                        }
 
                         var timeRemaining = TimeSpan.FromSeconds(PropertyManager.GetDouble("hot_dungeon_duration").Item).GetFriendlyString();
 
-                        var msg = $"{dungeonName} will be giving extra experience rewards for the next {timeRemaining}! The dungeon level is {dungeonLevel:N0}. The entrance is located {dungeonDirections}!";
+                        var tierLabel = tier == 1 ? "[Tier 1: Levels 1-50]" : "[Tier 2: Levels 51+]";
+                        var msg = $"{tierLabel} {dungeonName} will be giving extra experience rewards for the next {timeRemaining}! The dungeon level is {dungeonLevel:N0}. The entrance is located {dungeonDirections}!";
                         PlayerManager.BroadcastToAll(new GameMessageSystemChat(msg, ChatMessageType.WorldBroadcast));
                         PlayerManager.LogBroadcastChat(Channel.AllBroadcast, null, msg);
-
-                        return;
                     }
                 }
             }
-
-            NextHotDungeonRoll = Time.GetFutureUnixTime(PropertyManager.GetDouble("hot_dungeon_roll_delay").Item); // We failed to select a new hot dungeon, reschedule it.
         }
 
         public static List<string> PossibleFireSaleTowns = new List<string>()

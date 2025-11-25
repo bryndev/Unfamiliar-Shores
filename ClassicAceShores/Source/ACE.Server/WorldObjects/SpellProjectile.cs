@@ -762,31 +762,104 @@ namespace ACE.Server.WorldObjects
                 finalDamage *= elementalDamageMod * slayerMod * resistanceMod * absorbMod;
             }
 
-            //Apply pvp dmg mods for war and void (not including DOTs which are in EnchantmentManager.ApplyDamageTick)
-            if (isPvP)
-            {
-                float pvpMod = (float)PropertyManager.GetInterpolatedDouble(Level ?? 1, "pvp_dmg_mod_low", "pvp_dmg_mod_high", "pvp_dmg_mod_low_level", "pvp_dmg_mod_high_level");
+  // Apply PvP damage mods for Life / War / Void
+if (isPvP)
+{
+    // Base PvP scaling for all harmful projectile spells
+    float pvpMod = (float)PropertyManager.GetInterpolatedDouble(
+        Level ?? 1,
+        "pvp_dmg_mod_low",
+        "pvp_dmg_mod_high",
+        "pvp_dmg_mod_low_level",
+        "pvp_dmg_mod_high_level"
+    );
 
-                if (Spell.School == MagicSchool.WarMagic)
-                {
-                    if (FromProc)
-                        pvpMod *= (float)PropertyManager.GetInterpolatedDouble(Level ?? 1, "pvp_dmg_mod_low_unarmed_war", "pvp_dmg_mod_high_unarmed_war", "pvp_dmg_mod_low_level", "pvp_dmg_mod_high_level");
-                    else if (SpellType == ProjectileSpellType.Streak)
-                        pvpMod *= (float)PropertyManager.GetInterpolatedDouble(Level ?? 1, "pvp_dmg_mod_low_war_streak", "pvp_dmg_mod_high_war_streak", "pvp_dmg_mod_low_level", "pvp_dmg_mod_high_level");
-                    else
-                        pvpMod *= (float)PropertyManager.GetInterpolatedDouble(Level ?? 1, "pvp_dmg_mod_low_war", "pvp_dmg_mod_high_war", "pvp_dmg_mod_low_level", "pvp_dmg_mod_high_level");
+    // === LIFE MAGIC PVP SCALING ===
+    if (Spell.School == MagicSchool.LifeMagic)
+    {
+        pvpMod *= (float)PropertyManager.GetInterpolatedDouble(
+            Level ?? 1,
+            "pvp_dmg_mod_low_life",
+            "pvp_dmg_mod_high_life",
+            "pvp_dmg_mod_low_level",
+            "pvp_dmg_mod_high_level"
+        );
+    }
 
-                }
-                else if (Spell.DamageType == DamageType.Nether)
-                {
-                    if (SpellType == ProjectileSpellType.Streak)
-                        pvpMod *= (float)PropertyManager.GetInterpolatedDouble(Level ?? 1, "pvp_dmg_mod_low_void_streak", "pvp_dmg_mod_high_void_streak", "pvp_dmg_mod_low_level", "pvp_dmg_mod_high_level");
-                    else
-                        pvpMod *= (float)PropertyManager.GetInterpolatedDouble(Level ?? 1, "pvp_dmg_mod_low_void", "pvp_dmg_mod_high_void", "pvp_dmg_mod_low_level", "pvp_dmg_mod_high_level");
-                }
+    // === WAR MAGIC PVP SCALING ===
+    else if (Spell.School == MagicSchool.WarMagic)
+    {
+        if (FromProc)
+        {
+            pvpMod *= (float)PropertyManager.GetInterpolatedDouble(
+                Level ?? 1,
+                "pvp_dmg_mod_low_unarmed_war",
+                "pvp_dmg_mod_high_unarmed_war",
+                "pvp_dmg_mod_low_level",
+                "pvp_dmg_mod_high_level"
+            );
+        }
+        else if (SpellType == ProjectileSpellType.Streak)
+        {
+            pvpMod *= (float)PropertyManager.GetInterpolatedDouble(
+                Level ?? 1,
+                "pvp_dmg_mod_low_war_streak",
+                "pvp_dmg_mod_high_war_streak",
+                "pvp_dmg_mod_low_level",
+                "pvp_dmg_mod_high_level"
+            );
+        }
+        else
+        {
+            pvpMod *= (float)PropertyManager.GetInterpolatedDouble(
+                Level ?? 1,
+                "pvp_dmg_mod_low_war",
+                "pvp_dmg_mod_high_war",
+                "pvp_dmg_mod_low_level",
+                "pvp_dmg_mod_high_level"
+            );
+        }
+    }
 
-                finalDamage = finalDamage * pvpMod;
-            }
+    // === VOID (NETHER) MAGIC PVP SCALING ===
+    else if (Spell.DamageType == DamageType.Nether)
+    {
+        if (SpellType == ProjectileSpellType.Streak)
+        {
+            pvpMod *= (float)PropertyManager.GetInterpolatedDouble(
+                Level ?? 1,
+                "pvp_dmg_mod_low_void_streak",
+                "pvp_dmg_mod_high_void_streak",
+                "pvp_dmg_mod_low_level",
+                "pvp_dmg_mod_high_level"
+            );
+        }
+        else
+        {
+            pvpMod *= (float)PropertyManager.GetInterpolatedDouble(
+                Level ?? 1,
+                "pvp_dmg_mod_low_void",
+                "pvp_dmg_mod_high_void",
+                "pvp_dmg_mod_low_level",
+                "pvp_dmg_mod_high_level"
+            );
+        }
+    }
+
+     // Apply total PvP modifier
+    finalDamage *= pvpMod;
+
+    // === HARD PVP CAP — CONFIGURABLE MAX % OF TARGET MAX HEALTH ===
+    // Uses config key "pvp_damage_cap_percent", defaults to 0.65 (65%) if missing
+    float pvpCapPercent = (float)PropertyManager.GetDouble("pvp_damage_cap_percent", 0.65).Item;
+
+    if (pvpCapPercent > 0.0f)
+    {
+        float maxPvpDamage = target.Health.MaxValue * pvpCapPercent;
+        if (finalDamage > maxPvpDamage)
+            finalDamage = maxPvpDamage;
+    }
+}
 
             // show debug info
             if (sourceCreature != null && sourceCreature.DebugDamage.HasFlag(Creature.DebugDamageType.Attacker))

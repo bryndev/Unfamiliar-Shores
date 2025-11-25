@@ -228,6 +228,7 @@ namespace ACE.Server.WorldObjects
 
         public void RewardExplorationAssignments(WorldObject sourceObject = null, bool confirmed = false)
         {
+            Session.Network.EnqueueSend(new GameMessageSystemChat($"Debug: RewardExplorationAssignments called - Player Level: {Level}", ChatMessageType.System));
             bool useName = sourceObject?.Name.Length > 0;
 
             var hasAssignment1 = false;
@@ -240,16 +241,19 @@ namespace ACE.Server.WorldObjects
             {
                 hasAssignment1 = true;
                 assignment1Complete = Exploration1LandblockReached && Exploration1KillProgressTracker <= 0 && Exploration1MarkerProgressTracker <= 0;
+                Session.Network.EnqueueSend(new GameMessageSystemChat($"Debug: Assignment 1 - Reached:{Exploration1LandblockReached} Kills:{Exploration1KillProgressTracker} Markers:{Exploration1MarkerProgressTracker} Complete:{assignment1Complete}", ChatMessageType.System));
             }
             if (Exploration2LandblockId != 0 && Exploration2Description.Length > 0)
             {
                 hasAssignment2 = true;
                 assignment2Complete = Exploration2LandblockReached && Exploration2KillProgressTracker <= 0 && Exploration2MarkerProgressTracker <= 0;
+                Session.Network.EnqueueSend(new GameMessageSystemChat($"Debug: Assignment 2 - Reached:{Exploration2LandblockReached} Kills:{Exploration2KillProgressTracker} Markers:{Exploration2MarkerProgressTracker} Complete:{assignment2Complete}", ChatMessageType.System));
             }
             if (Exploration3LandblockId != 0 && Exploration3Description.Length > 0)
             {
                 hasAssignment3 = true;
                 assignment3Complete = Exploration3LandblockReached && Exploration3KillProgressTracker <= 0 && Exploration3MarkerProgressTracker <= 0;
+                Session.Network.EnqueueSend(new GameMessageSystemChat($"Debug: Assignment 3 - Reached:{Exploration3LandblockReached} Kills:{Exploration3KillProgressTracker} Markers:{Exploration3MarkerProgressTracker} Complete:{assignment3Complete}", ChatMessageType.System));
             }
 
             if (useName)
@@ -269,20 +273,39 @@ namespace ACE.Server.WorldObjects
 
                 // Grant XP for completed contracts using reward-by-level system (once a day frequency)
                 int completedCount = (assignment1Complete ? 1 : 0) + (assignment2Complete ? 1 : 0) + (assignment3Complete ? 1 : 0);
-                
-                // Calculate and grant actual XP directly based on level
+
+                // Declare playerLevel once to avoid duplicate declaration error
+                int playerLevel = Level ?? 1;
+
+                // Calculate and grant actual XP using tiered exponential system
                 if (completedCount > 0)
                 {
-                    // Base XP calculation: 1000 XP per level per assignment completed
-                    // Adjust this formula as needed for your server
-                    long baseXpPerAssignment = 1000L * (Level ?? 1);
-                    long totalXP = baseXpPerAssignment * completedCount;
-                    
-                    // Grant the XP directly with a proper positive value
-                    EarnXP(totalXP, XpType.Quest, null, null, 0, null, ShareType.None);
-                    
-                    // Send XP notification message
-                    Session.Network.EnqueueSend(new GameMessageSystemChat($"You've earned {totalXP:N0} experience for completing {completedCount} exploration assignment{(completedCount != 1 ? "s" : "")}!", ChatMessageType.Broadcast));
+                    long xpPerAssignment;
+
+                    // Tiered exponential XP calculation (Level² × multiplier)
+                    if (playerLevel <= 20)
+                    {
+                        // Tier 1: Level² × 50 (50-20,000 XP range)
+                        xpPerAssignment = (long)(playerLevel * playerLevel * 50);
+                    }
+                    else if (playerLevel <= 55)
+                    {
+                        // Tier 2: Level² × 75 (33,075-226,875 XP range)
+                        xpPerAssignment = (long)(playerLevel * playerLevel * 75);
+                    }
+                    else
+                    {
+                        // Tier 3: Level² × 100 (313,600+ XP)
+                        xpPerAssignment = (long)(playerLevel * playerLevel * 100);
+                    }
+
+                    long totalXP = xpPerAssignment * completedCount;
+
+                    // Create the XP message
+                    var xpMsg = $"You've earned {totalXP:N0} experience for completing {completedCount} exploration assignment{(completedCount != 1 ? "s" : "")}!";
+
+                    // Grant the XP with the message parameter
+                    EarnXP(totalXP, XpType.Quest, null, null, 0, null, ShareType.None, xpMsg);
                 }
 
                 // Calculate reward tier directly based on level ranges
@@ -290,25 +313,27 @@ namespace ACE.Server.WorldObjects
                 // Tier 1-2: Low tier rewards (levels 1-20)
                 // Tier 3-5: Mid tier rewards (levels 21-55)  
                 // Tier 6-7: High tier rewards (levels 56+)
-                int playerLevel = Level ?? 1;
                 int rewardTier;
-                
+
                 if (playerLevel <= 20)
                 {
                     // Low tier rewards - use tier 1 (will trigger the <= 2 condition)
                     rewardTier = 1;
+                    Session.Network.EnqueueSend(new GameMessageSystemChat($"Debug: Level {playerLevel} = Tier {rewardTier} (Low tier rewards)", ChatMessageType.System));
                 }
                 else if (playerLevel <= 55)
                 {
                     // Mid tier rewards - use tier 3 (will trigger the <= 5 condition)
                     rewardTier = 3;
+                    Session.Network.EnqueueSend(new GameMessageSystemChat($"Debug: Level {playerLevel} = Tier {rewardTier} (Mid tier rewards)", ChatMessageType.System));
                 }
                 else
                 {
                     // High tier rewards - use tier 6 (will trigger the else condition)
                     rewardTier = 6;
+                    Session.Network.EnqueueSend(new GameMessageSystemChat($"Debug: Level {playerLevel} = Tier {rewardTier} (High tier rewards)", ChatMessageType.System));
                 }
-                
+
                 int rewardAmount;
 
                 // ASSIGNMENT 1 - COMPLETE BLOCK WITH TIERED REWARDS
@@ -325,7 +350,7 @@ namespace ACE.Server.WorldObjects
                         {
                             // Low tier rewards (levels 1-20)
                             GiveFromEmote(sourceObject, 116057);  // REPLACE WITH YOUR LOW TIER WCID #1
-                            GiveFromEmote(sourceObject, 50182);  // REPLACE WITH YOUR LOW TIER WCID #2
+                            GiveFromEmote(sourceObject, 2225084);  // REPLACE WITH YOUR LOW TIER WCID #2
                             GiveFromEmote(sourceObject, 4616);  // REPLACE WITH YOUR LOW TIER WCID #3
                         }
                         else if (rewardTier <= 5)
@@ -338,7 +363,7 @@ namespace ACE.Server.WorldObjects
                         else
                         {
                             // High tier rewards (levels 55+)
-                            GiveFromEmote(sourceObject, 5084111);  // REPLACE WITH YOUR HIGH TIER WCID #1
+                            GiveFromEmote(sourceObject, 44240111);  // REPLACE WITH YOUR HIGH TIER WCID #1
                             GiveFromEmote(sourceObject, 20630);  // REPLACE WITH YOUR HIGH TIER WCID #2
                             GiveFromEmote(sourceObject, 50184);  // REPLACE WITH YOUR HIGH TIER WCID #3
                         }
@@ -365,7 +390,7 @@ namespace ACE.Server.WorldObjects
                         {
                             // Low tier rewards (levels 1-20)
                             GiveFromEmote(sourceObject, 116057);  // REPLACE WITH YOUR LOW TIER WCID #1
-                            GiveFromEmote(sourceObject, 1115084);  // REPLACE WITH YOUR LOW TIER WCID #2
+                            GiveFromEmote(sourceObject, 4616);  // REPLACE WITH YOUR LOW TIER WCID #2
                             GiveFromEmote(sourceObject, 2225084);  // REPLACE WITH YOUR LOW TIER WCID #3
                         }
                         else if (rewardTier <= 5)
@@ -378,7 +403,7 @@ namespace ACE.Server.WorldObjects
                         else
                         {
                             // High tier rewards (levels 55+)
-                            GiveFromEmote(sourceObject, 5084111);  // REPLACE WITH YOUR HIGH TIER WCID #1
+                            GiveFromEmote(sourceObject, 44240111);  // REPLACE WITH YOUR HIGH TIER WCID #1
                             GiveFromEmote(sourceObject, 20630);  // REPLACE WITH YOUR HIGH TIER WCID #2
                             GiveFromEmote(sourceObject, 50184);  // REPLACE WITH YOUR HIGH TIER WCID #3
                         }
@@ -405,7 +430,7 @@ namespace ACE.Server.WorldObjects
                         {
                             // Low tier rewards (levels 1-20)
                             GiveFromEmote(sourceObject, 116057);  // REPLACE WITH YOUR LOW TIER WCID #1
-                            GiveFromEmote(sourceObject, 1115084);  // REPLACE WITH YOUR LOW TIER WCID #2
+                            GiveFromEmote(sourceObject, 4616);  // REPLACE WITH YOUR LOW TIER WCID #2
                             GiveFromEmote(sourceObject, 2225084);  // REPLACE WITH YOUR LOW TIER WCID #3
                         }
                         else if (rewardTier <= 5)
@@ -418,7 +443,7 @@ namespace ACE.Server.WorldObjects
                         else
                         {
                             // High tier rewards (levels 55+)
-                            GiveFromEmote(sourceObject, 5084111);  // REPLACE WITH YOUR HIGH TIER WCID #1
+                            GiveFromEmote(sourceObject, 44240111);  // REPLACE WITH YOUR HIGH TIER WCID #1
                             GiveFromEmote(sourceObject, 20630);  // REPLACE WITH YOUR HIGH TIER WCID #2
                             GiveFromEmote(sourceObject, 50184);  // REPLACE WITH YOUR HIGH TIER WCID #3
                         }

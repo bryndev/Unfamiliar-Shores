@@ -1069,6 +1069,7 @@ namespace ACE.Server.Managers
                 ("pvp_dmg_mod_high_shield_block_chance", new Property<double>(1.0, "Scales the base shield block chance.")),
 
                 ("pvp_dmg_mod_high_sneak", new Property<double>(1.0, "Scales the sneak attack damage multiplier.")),
+				("pvp_damage_cap_percent", new Property<double>(0.65, "Cap on magic damage.")),
 
                 ("pk_cast_radius", new Property<double>(6.0, "The distance in meters a player can travel from their starting cast position. if they exceed this distance, they fizzle the spell.")),
 
