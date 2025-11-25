@@ -661,7 +661,7 @@ namespace ACE.Server.WorldObjects
                 quickness = Focus.Current;
             var weaponSpeed = GetWeaponSpeed(this);
 
-            var divisor = 1.0 - (quickness / 300.0) + (weaponSpeed / 150.0);
+            var divisor = 1.0 - (quickness / 315.0) + (weaponSpeed / 150.0);
             if (divisor <= 0)
                 return (float)MaxAttackSpeed;
 

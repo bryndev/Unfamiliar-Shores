@@ -369,7 +369,7 @@ namespace ACE.Server.WorldObjects
             //Console.WriteLine($"{maneuver.Style} - {maneuver.Motion} - {maneuver.AttackHeight}");
 
             var baseSpeed = GetAnimSpeed();
-            var animSpeedMod = IsDualWieldAttack ? 1.2f : 1.0f;     // dual wield swing animation 20% faster
+            var animSpeedMod = IsDualWieldAttack ? 1.25f : 1.0f;     // dual wield swing animation 20% faster
             var animSpeed = baseSpeed * animSpeedMod;
 
             animLength = MotionTable.GetAnimationLength(MotionTableId, CurrentMotionState.Stance, motionCommand, animSpeed);
