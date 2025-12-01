@@ -798,6 +798,11 @@ namespace ACE.Server.WorldObjects
                 // exclude pyreals from randomized death item calculation
                 inventory = inventory.Where(i => i.WeenieClassId != coinStackWcid).ToList();
 
+                // exclude items inside Gem Pouch and Spell Component Pouch
+                // mimics existing behavior from RevertToBrandNewCharacterEquipment in Player_Xp.cs
+                inventory = inventory.Where(i => !(i.WeenieType == WeenieType.Gem && i.Container.WeenieClassId == 60001) &&  // Gem Pouch
+                                                 !(i.WeenieType == WeenieType.SpellComponent && i.Container.WeenieClassId == 50009)).ToList(); // Spell Component Pouch
+
                 var time = Time.GetUnixTime() - 300;
                 inventory = inventory.Where(i => i.SoldTimestamp > time).ToList();
 
@@ -893,6 +898,11 @@ namespace ACE.Server.WorldObjects
 
                     // exclude pyreals from randomized death item calculation
                     inventory = inventory.Where(i => i.WeenieClassId != coinStackWcid).ToList();
+
+                    // exclude items inside Gem Pouch and Spell Component Pouch
+                    // mimics existing behavior from RevertToBrandNewCharacterEquipment in Player_Xp.cs
+                    inventory = inventory.Where(i => !(i.WeenieType == WeenieType.Gem && i.Container.WeenieClassId == 60001) &&  // Gem Pouch
+                                                     !(i.WeenieType == WeenieType.SpellComponent && i.Container.WeenieClassId == 50009)).ToList(); // Spell Component Pouch
 
                     List<WorldObject> wieldedItems = null;
                     if (dropAllWielded)
