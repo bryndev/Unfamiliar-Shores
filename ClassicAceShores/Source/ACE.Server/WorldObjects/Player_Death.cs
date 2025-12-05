@@ -160,7 +160,7 @@ namespace ACE.Server.WorldObjects
                     if (locationString == "" && (Location.Cell & 0xFFFF) < 0x100)
                         globalPKDe += $" The kill occured at {Location.GetMapCoordStr()}";
                     else
-                        globalPKDe += $" The kill occured{locationString}.";
+                        globalPKDe += $" The kill occurede{locationString}.";
                 }
 
                 string webhookMsg = new String(globalPKDe);
@@ -271,6 +271,8 @@ namespace ACE.Server.WorldObjects
 
             if (IsHardcore && !IsOnArenaLandblock)
             {
+                var prefix = "[HCDeathDebug]";
+                var deathMsg = $"{prefix} === HARDCORE DEATH TRIGGERED ===\n";
                 var killerName = "misadventure";
                 var killerLevel = 0;
                 var wasPvP = false;
@@ -280,6 +282,52 @@ namespace ACE.Server.WorldObjects
                     killerLevel = topDamager.Level;
                     wasPvP = topDamager.IsPlayer;
                 }
+
+                deathMsg += $"{prefix} Player: {Name} (0x{Guid.Full:X8})\n";
+                deathMsg += $"{prefix} Character ID: {Character?.Id ?? 0}\n";
+                deathMsg += $"{prefix} Account: {(Account?.AccountName ?? "unknown")}\n";
+                deathMsg += $"{prefix} Level: {Level ?? 1}\n";
+                deathMsg += $"{prefix} GameplayMode: {GameplayMode}\n";
+                deathMsg += $"{prefix} Location: {Location?.GetMapCoordStr() ?? "unknown"} (Landblock: 0x{CurrentLandblock?.Id.Raw >> 16:X4})\n";
+                deathMsg += $"{prefix} Killer: {killerName} (Level {killerLevel})\n";
+                deathMsg += $"{prefix} Was PvP: {wasPvP}\n";
+                deathMsg += $"{prefix} Total XP: {TotalExperience ?? 0}\n";
+                deathMsg += $"{prefix} Age: {Age ?? 0} seconds\n";
+                log.Info(deathMsg);
+
+                // === HC DEATH DEBUG: PRE-DEATH SNAPSHOT ===
+                var preDeathItems = GetAllPossessions();
+                int preBondedCount = 0;
+                int preGemCount = 0;
+                int preRegularCount = 0;
+
+                log.Info($"{prefix} === PRE-DEATH INVENTORY SNAPSHOT ===");
+                log.Info($"{prefix} Total Items: {preDeathItems.Count}");
+
+                foreach (var item in preDeathItems)
+                {
+                    var bondedValue = item.GetProperty(PropertyInt.Bonded) ?? 0;
+                    var isBonded = bondedValue != 0;
+                    var isGem = item.ItemType == ItemType.Gem;
+                    var category = isBonded ? "BONDED" : (isGem ? "GEM" : "REGULAR");
+                    var locationStr = (item.CurrentWieldedLocation != null && item.CurrentWieldedLocation != EquipMask.None) ? "Wielded" : 
+                                     (item.ContainerId != null ? "Container" : "Inventory");
+                    var stackStr = (item.StackSize.HasValue && item.StackSize > 1) ? $" | Stack: {item.StackSize.Value}" : "";
+
+                    log.Info($"{prefix} [{category}] 0x{item.Guid.Full:X8} | {item.Name} | {locationStr}{stackStr}");
+
+                    if (isBonded)
+                        preBondedCount++;
+                    else if (isGem)
+                        preGemCount++;
+                    else
+                        preRegularCount++;
+                }
+
+                log.Info($"{prefix} === ITEM BREAKDOWN ===");
+                log.Info($"{prefix} Bonded Items: {preBondedCount}");
+                log.Info($"{prefix} Gems: {preGemCount}");
+                log.Info($"{prefix} Regular (Unbonded, Non-Gem): {preRegularCount}");
 
                 DatabaseManager.Shard.BaseDatabase.LogHardcoreDeath(Account, Guid.Full, Name, Level ?? 1, killerName, killerLevel, CurrentLandblock.Id.Raw >> 16, (int)GameplayMode, wasPvP, PlayerKillsPkl ?? 0, TotalExperience ?? 0, Age ?? 0, DateTime.Now, MonarchId);
             }
@@ -544,6 +592,41 @@ namespace ACE.Server.WorldObjects
 
                     RevertToBrandNewCharacter(false, true, true, true, true, true, (long)xpToRetain);
 
+                    // === HC DEATH DEBUG: POST-REVERT SNAPSHOT ===
+                    var prefix = "[HCDeathDebug]";
+                    var postRevertItems = GetAllPossessions();
+                    int postBondedCount = 0;
+                    int postGemCount = 0;
+                    int postRegularCount = 0;
+
+                    log.Info($"{prefix} === POST-REVERT INVENTORY SNAPSHOT ===");
+                    log.Info($"{prefix} Total Items: {postRevertItems.Count}");
+
+                    foreach (var item in postRevertItems)
+                    {
+                        var bondedValue = item.GetProperty(PropertyInt.Bonded) ?? 0;
+                        var isBonded = bondedValue != 0;
+                        var isGem = item.ItemType == ItemType.Gem;
+                        var category = isBonded ? "BONDED" : (isGem ? "GEM" : "REGULAR");
+                        var locationStr = (item.CurrentWieldedLocation != null && item.CurrentWieldedLocation != EquipMask.None) ? "Wielded" : 
+                                         (item.ContainerId != null ? "Container" : "Inventory");
+                        var stackStr = (item.StackSize.HasValue && item.StackSize > 1) ? $" | Stack: {item.StackSize.Value}" : "";
+
+                        log.Info($"{prefix} [{category}] 0x{item.Guid.Full:X8} | {item.Name} | {locationStr}{stackStr}");
+
+                        if (isBonded)
+                            postBondedCount++;
+                        else if (isGem)
+                            postGemCount++;
+                        else
+                            postRegularCount++;
+                    }
+
+                    log.Info($"{prefix} === ITEM BREAKDOWN ===");
+                    log.Info($"{prefix} Bonded Items: {postBondedCount}");
+                    log.Info($"{prefix} Gems: {postGemCount}");
+                    log.Info($"{prefix} Regular (Unbonded, Non-Gem): {postRegularCount}");
+
                     var teleportChain = new ActionChain();
                     if (!IsLoggingOut) // If we're in the process of logging out, we skip the delay
                         teleportChain.AddDelaySeconds(3.0f);
@@ -735,8 +818,6 @@ namespace ACE.Server.WorldObjects
 
             // http://acpedia.org/wiki/Recovering_from_Death
 
-            // Recovering from Death
-
             // Fortunately, you won't be in immediate danger of being killed again, because you're invulnerable to attack for a full minute if you don't attack another
             // creature of cast any spells. Also, your secondary attributes, even if all had been reduced to 0 when you died, will be at 75 percent of their new
             // maximum score, and any poisons or harmful enchantments afflicting you just before you died will be gone, giving you a fighting chance of making it
@@ -859,13 +940,33 @@ namespace ACE.Server.WorldObjects
                         {
                             var containedBoundItems = container.Inventory.Values.Where(i => (i.GetProperty(PropertyInt.Bonded) ?? 0) != 0 && !(IsHardcore && i.ItemType == ItemType.PromissoryNote)).ToList();
 
+                            // Debug logging for bonded items rescue attempt
+                            if (containedBoundItems.Count > 0)
+                            {
+                                var boundItemsInfo = string.Join(", ", containedBoundItems.Select(i => $"0x{i.Guid.Full:X8}:{i.Name}"));
+                                var debugMsg = $"[BONDED-DEBUG] Player {Name} (0x{Guid.Full:X8}) - IsHardcore={IsHardcore}, IsOnArenaLandblock={IsOnArenaLandblock}, dropAllItems={dropAllItems}, Container 0x{container.Guid.Full:X8}:{container.Name}, BoundItemsCount={containedBoundItems.Count}, Items=[{boundItemsInfo}]";
+                                log.Debug(debugMsg);
+                                //Console.WriteLine(debugMsg);
+                            }
+
                             foreach(var containedItem in containedBoundItems)
                             {
                                 if (!DoHandleActionPutItemInContainer(containedItem, this, false, this, this, 0))
                                 {
+                                    // Debug logging for failed container insertion
+                                    var sessionState = Session == null ? "null" : Session.State.ToString();
+                                    var failMsg = $"[BONDED-DEBUG] DoHandleActionPutItemInContainer FAILED - Item 0x{containedItem.Guid.Full:X8}:{containedItem.Name}, Container 0x{container.Guid.Full:X8}:{container.Name}, Player {Name} (0x{Guid.Full:X8}), IsBusy={IsBusy}, Teleporting={Teleporting}, suicideInProgress={suicideInProgress}, SessionState={sessionState}";
+                                    log.Warn(failMsg);
+                                    //Console.WriteLine(failMsg);
+
                                     if(!TryDropItem(containedItem))
                                     {
-                                        log.WarnFormat("Couldn't move bound death item 0x{0:X8}:{1} to player {2}'s main pack nor ground.", item.Guid.Full, item.Name, Name);
+                                        // Debug logging before destructive fallback
+                                        var consumeMsg = $"[BONDED-DEBUG] DESTRUCTIVE FALLBACK - TryConsumeFromInventoryWithNetworking about to run for Item 0x{containedItem.Guid.Full:X8}:{containedItem.Name}, StackSize={containedItem.StackSize ?? 1}, Player {Name} (0x{Guid.Full:X8})";
+                                        log.Warn(consumeMsg);
+                                        //Console.WriteLine(consumeMsg);
+
+                                        log.WarnFormat("Couldn't move bound death item 0x{0:X8}:{1} to player {2}'s main pack nor ground.", containedItem.Guid.Full, containedItem.Name, Name);
                                         TryConsumeFromInventoryWithNetworking(containedItem, containedItem.StackSize ?? 1);
                                     }
                                 }
@@ -914,38 +1015,93 @@ namespace ACE.Server.WorldObjects
 
                     if (dropAllWielded && wieldedItems != null)
                     {
+                        // === HC DEATH DEBUG: Processing wielded items ===
+                        log.Info($"[HCDeathDebug] === PROCESSING WIELDED ITEMS ({wieldedItems.Count} items) ===");
+                        //Console.WriteLine($"[HCDeathDebug] === PROCESSING WIELDED ITEMS ({wieldedItems.Count} items) ===");
+
+                        int wieldedIndex = 0;
                         foreach (var item in wieldedItems)
                         {
+                            wieldedIndex++;
+                            var bondedValue = item.GetProperty(PropertyInt.Bonded) ?? 0;
+                            var isBonded = bondedValue != 0;
+                            var isGem = item.ItemType == ItemType.Gem;
+                            var itemCategory = isBonded ? "BONDED" : (isGem ? "GEM" : "REGULAR");
+                            var locationStr = (item.CurrentWieldedLocation != null && item.CurrentWieldedLocation != EquipMask.None) ? "Wielded" : 
+                                             (item.ContainerId != null ? "Container" : "Inventory");
+                            var stackStr = (item.StackSize.HasValue && item.StackSize > 1) ? $" | Stack: {item.StackSize.Value}" : "";
+
+                            log.Info($"[HCDeathDebug] Processing wielded item {wieldedIndex}: [{itemCategory}] 0x{item.Guid.Full:X8} | {item.Name} | {locationStr}{stackStr}");
+                            //Console.WriteLine($"[HCDeathDebug] Processing wielded item {wieldedIndex}: [{itemCategory}] 0x{item.Guid.Full:X8} | {item.Name} | {locationStr}{stackStr}");
+
                             if (TryRemoveFromInventoryWithNetworking(item.Guid, out _, RemoveFromInventoryAction.ToCorpseOnDeath) || TryDequipObjectWithNetworking(item.Guid, out _, DequipObjectAction.ToCorpseOnDeath))
                             {
                                 //Console.WriteLine("Dropping " + deathItem.WorldObject.Name);
                                 dropItems.Add(item);
+
+                                log.Info($"[HCDeathDebug] Action: DROPPED to corpse - [{itemCategory}] {item.Name}");
+                                //Console.WriteLine($"[HCDeathDebug] Action: DROPPED to corpse - [{itemCategory}] {item.Name}");
+
+                                if (isGem)
+                                {
+                                    log.Warn($"[HCDeathDebug] WARNING: GEM SELECTED FOR DROP! {item.Name}");
+                                    //Console.WriteLine($"[HCDeathDebug] WARNING: GEM SELECTED FOR DROP! {item.Name}");
+                                }
+                                if (isBonded)
+                                {
+                                    log.Warn($"[HCDeathDebug] WARNING: BONDED ITEM BEING DROPPED! {item.Name}");
+                                    //Console.WriteLine($"[HCDeathDebug] WARNING: BONDED ITEM BEING DROPPED! {item.Name}");
+                                }
                             }
                             else
                             {
                                 log.WarnFormat("Couldn't find death item 0x{0:X8}:{1} for player {2}", item.Guid.Full, item.Name, Name);
+                                log.Warn($"[HCDeathDebug] Action: INVALID/FAILED - Couldn't find wielded item - [{itemCategory}] {item.Name}");
+                                //Console.WriteLine($"[HCDeathDebug] Action: INVALID/FAILED - Couldn't find wielded item - [{itemCategory}] {item.Name}");
                             }
                         }
                     }
 
                     if (dropAllTradeNotes && tradeNotes != null)
                     {
+                        // === HC DEATH DEBUG: Processing trade notes ===
+                        log.Info($"[HCDeathDebug] === PROCESSING TRADE NOTES ({tradeNotes.Count} items) ===");
+                        //Console.WriteLine($"[HCDeathDebug] === PROCESSING TRADE NOTES ({tradeNotes.Count} items) ===");
+
+                        int noteIndex = 0;
                         foreach (var item in tradeNotes)
                         {
+                            noteIndex++;
+                            var locationStr = (item.CurrentWieldedLocation != null && item.CurrentWieldedLocation != EquipMask.None) ? "Wielded" : 
+                                             (item.ContainerId != null ? "Container" : "Inventory");
+                            var stackStr = (item.StackSize.HasValue && item.StackSize > 1) ? $" | Stack: {item.StackSize.Value}" : "";
+
+                            log.Info($"[HCDeathDebug] Processing trade note {noteIndex}: [TRADENOTE] 0x{item.Guid.Full:X8} | {item.Name} | {locationStr}{stackStr}");
+                            //Console.WriteLine($"[HCDeathDebug] Processing trade note {noteIndex}: [TRADENOTE] 0x{item.Guid.Full:X8} | {item.Name} | {locationStr}{stackStr}");
+
                             if (TryRemoveFromInventoryWithNetworking(item.Guid, out _, RemoveFromInventoryAction.ToCorpseOnDeath) || TryDequipObjectWithNetworking(item.Guid, out _, DequipObjectAction.ToCorpseOnDeath))
                             {
                                 //Console.WriteLine("Dropping " + deathItem.WorldObject.Name);
                                 dropItems.Add(item);
+
+                                log.Info($"[HCDeathDebug] Action: DROPPED to corpse - [TRADENOTE] {item.Name}");
+                                //Console.WriteLine($"[HCDeathDebug] Action: DROPPED to corpse - [TRADENOTE] {item.Name}");
                             }
                             else
                             {
                                 log.WarnFormat("Couldn't find death item 0x{0:X8}:{1} for player {2}", item.Guid.Full, item.Name, Name);
+                                log.Warn($"[HCDeathDebug] Action: INVALID/FAILED - Couldn't find trade note - [TRADENOTE] {item.Name}");
+                                //Console.WriteLine($"[HCDeathDebug] Action: INVALID/FAILED - Couldn't find trade note - [TRADENOTE] {item.Name}");
                             }
                         }
                     }
 
                     if (numItemsDropped > 0)
                     {
+                        // === HC DEATH DEBUG: Processing regular death items ===
+                        log.Info($"[HCDeathDebug] === PROCESSING REGULAR DEATH ITEMS (selecting {numItemsDropped} items) ===");
+                        //Console.WriteLine($"[HCDeathDebug] === PROCESSING REGULAR DEATH ITEMS (selecting {numItemsDropped} items) ===");
+
                         // construct the list of death items
                         var sorted = new DeathItems(inventory);
 
@@ -953,6 +1109,18 @@ namespace ACE.Server.WorldObjects
                         for (var i = 0; i < numItemsDropped && i < sorted.Inventory.Count; i++)
                         {
                             var deathItem = sorted.Inventory[i];
+                            var item = deathItem.WorldObject;
+
+                            var bondedValue = item.GetProperty(PropertyInt.Bonded) ?? 0;
+                            var isBonded = bondedValue != 0;
+                            var isGem = item.ItemType == ItemType.Gem;
+                            var itemCategory = isBonded ? "BONDED" : (isGem ? "GEM" : "REGULAR");
+                            var locationStr = (item.CurrentWieldedLocation != null && item.CurrentWieldedLocation != EquipMask.None) ? "Wielded" : 
+                                             (item.ContainerId != null ? "Container" : "Inventory");
+                            var stackStr = (item.StackSize.HasValue && item.StackSize > 1) ? $" | Stack: {item.StackSize.Value}" : "";
+
+                            log.Info($"[HCDeathDebug] Processing death item {i + 1}: [{itemCategory}] 0x{item.Guid.Full:X8} | {item.Name} | {locationStr}{stackStr}");
+                            //Console.WriteLine($"[HCDeathDebug] Processing death item {i + 1}: [{itemCategory}] 0x{item.Guid.Full:X8} | {item.Name} | {locationStr}{stackStr}");
 
                             // split stack if needed
                             if ((deathItem.WorldObject.StackSize ?? 1) > 1)
@@ -969,10 +1137,21 @@ namespace ACE.Server.WorldObjects
 
                                     //Console.WriteLine("Dropping " + deathItem.WorldObject.Name + " (stack)");
                                     dropItems.Add(dropItem);
+
+                                    log.Info($"[HCDeathDebug] Action: DROPPED (1 from stack) - [{itemCategory}] {item.Name}");
+                                    //Console.WriteLine($"[HCDeathDebug] Action: DROPPED (1 from stack) - [{itemCategory}] {item.Name}");
+
+                                    if (isGem)
+                                    {
+                                        log.Warn($"[HCDeathDebug] WARNING: GEM SELECTED FOR DROP! {item.Name}");
+                                        //Console.WriteLine($"[HCDeathDebug] WARNING: GEM SELECTED FOR DROP! {item.Name}");
+                                    }
                                 }
                                 else
                                 {
                                     log.WarnFormat("Couldn't find death item stack 0x{0:X8}:{1} for player {2}", deathItem.WorldObject.Guid.Full, deathItem.WorldObject.Name, Name);
+                                    log.Warn($"[HCDeathDebug] Action: INVALID/FAILED - Couldn't find stack - [{itemCategory}] {item.Name}");
+                                    //Console.WriteLine($"[HCDeathDebug] Action: INVALID/FAILED - Couldn't find stack - [{itemCategory}] {item.Name}");
                                 }
                             }
                             else
@@ -981,10 +1160,26 @@ namespace ACE.Server.WorldObjects
                                 {
                                     //Console.WriteLine("Dropping " + deathItem.WorldObject.Name);
                                     dropItems.Add(deathItem.WorldObject);
+
+                                    log.Info($"[HCDeathDebug] Action: DROPPED to corpse - [{itemCategory}] {item.Name}");
+                                    //Console.WriteLine($"[HCDeathDebug] Action: DROPPED to corpse - [{itemCategory}] {item.Name}");
+
+                                    if (isGem)
+                                    {
+                                        log.Warn($"[HCDeathDebug] WARNING: GEM SELECTED FOR DROP! {item.Name}");
+                                        //Console.WriteLine($"[HCDeathDebug] WARNING: GEM SELECTED FOR DROP! {item.Name}");
+                                    }
+                                    if (isBonded)
+                                    {
+                                        log.Warn($"[HCDeathDebug] WARNING: BONDED ITEM BEING DROPPED! {item.Name}");
+                                        //Console.WriteLine($"[HCDeathDebug] WARNING: BONDED ITEM BEING DROPPED! {item.Name}");
+                                    }
                                 }
                                 else
                                 {
                                     log.WarnFormat("Couldn't find death item 0x{0:X8}:{1} for player {2}", deathItem.WorldObject.Guid.Full, deathItem.WorldObject.Name, Name);
+                                    log.Warn($"[HCDeathDebug] Action: INVALID/FAILED - Couldn't find item - [{itemCategory}] {item.Name}");
+                                    //Console.WriteLine($"[HCDeathDebug] Action: INVALID/FAILED - Couldn't find item - [{itemCategory}] {item.Name}");
                                 }
                             }
                         }
@@ -1567,5 +1762,6 @@ namespace ACE.Server.WorldObjects
                 return new();
             }
         }
+
     }
 }

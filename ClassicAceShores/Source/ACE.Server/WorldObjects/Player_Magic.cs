@@ -995,7 +995,8 @@ namespace ACE.Server.WorldObjects
                                                     SpellId castSpellLevel1Id = (SpellId)(amulet.LeyLineCastSpellId ?? 0);
                                                     if (castSpellLevel1Id != SpellId.Undef)
                                                     {
-                                                        SpellId castSpellId = SpellLevelProgression.GetSpellAtLevel(castSpellLevel1Id, (int)spell.Level - 1, true);
+                                                        int randomLevel = ThreadSafeRandom.Next(2, (int)spell.Level);
+                                                        SpellId castSpellId = SpellLevelProgression.GetSpellAtLevel(castSpellLevel1Id, randomLevel, true);
                                                         if (castSpellId != SpellId.Undef)
                                                         {
                                                             var castSpell = new Spell(castSpellId);

@@ -242,6 +242,18 @@ namespace ACE.Server.WorldObjects
                 if (GetCreatureSkill(Skill.DirtyFighting).AdvancementClass >= SkillAdvancementClass.Trained)
                     FightDirty(target, damageEvent.Weapon);
                 
+                // BEGIN PVP BLEED ENABLE AND WEAPON PROCS
+                // Handle weapon procs (including bleeds) for both PVE and PVP
+                if (damageEvent.Weapon != null && target is Creature creatureTarget)
+                {
+                    // Try weapon-specific innate procs (daggers/unarmed/mace/staff/sword)
+                    damageEvent.Weapon.TryProcInnate(this, creatureTarget, false, damageEvent);
+                    
+                    // Try equipped item procs (aetheria, weapon procs, etc)
+                    damageSource?.TryProcEquippedItems(this, creatureTarget, false, damageEvent.Weapon, damageEvent);
+                }
+                // END PVP BLEED ENABLE AND WEAPON PROCS
+                
                 target.EmoteManager.OnDamage(this);
 
                 if (damageEvent.IsCritical)

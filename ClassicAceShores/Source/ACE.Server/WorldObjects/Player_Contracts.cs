@@ -357,7 +357,7 @@ namespace ACE.Server.WorldObjects
                         {
                             // Mid tier rewards (levels 20-50) - YOUR CURRENT ITEMS
                             GiveFromEmote(sourceObject, 36518);
-                            GiveFromEmote(sourceObject, 1115084);
+                            GiveFromEmote(sourceObject, 36518);
                             GiveFromEmote(sourceObject, 44240111);
                         }
                         else
@@ -365,7 +365,7 @@ namespace ACE.Server.WorldObjects
                             // High tier rewards (levels 55+)
                             GiveFromEmote(sourceObject, 44240111);  // REPLACE WITH YOUR HIGH TIER WCID #1
                             GiveFromEmote(sourceObject, 20630);  // REPLACE WITH YOUR HIGH TIER WCID #2
-                            GiveFromEmote(sourceObject, 50184);  // REPLACE WITH YOUR HIGH TIER WCID #3
+                            GiveFromEmote(sourceObject, 1115084);  // REPLACE WITH YOUR HIGH TIER WCID #3
                         }
                     }
 
@@ -397,7 +397,7 @@ namespace ACE.Server.WorldObjects
                         {
                             // Mid tier rewards (levels 20-50) - YOUR CURRENT ITEMS
                             GiveFromEmote(sourceObject, 36518);
-                            GiveFromEmote(sourceObject, 1115084);
+                            GiveFromEmote(sourceObject, 36518);
                             GiveFromEmote(sourceObject, 44240111);
                         }
                         else
@@ -405,7 +405,7 @@ namespace ACE.Server.WorldObjects
                             // High tier rewards (levels 55+)
                             GiveFromEmote(sourceObject, 44240111);  // REPLACE WITH YOUR HIGH TIER WCID #1
                             GiveFromEmote(sourceObject, 20630);  // REPLACE WITH YOUR HIGH TIER WCID #2
-                            GiveFromEmote(sourceObject, 50184);  // REPLACE WITH YOUR HIGH TIER WCID #3
+                            GiveFromEmote(sourceObject, 1115084);  // REPLACE WITH YOUR HIGH TIER WCID #3
                         }
                     }
 
@@ -437,7 +437,7 @@ namespace ACE.Server.WorldObjects
                         {
                             // Mid tier rewards (levels 20-50) - YOUR CURRENT ITEMS
                             GiveFromEmote(sourceObject, 36518);
-                            GiveFromEmote(sourceObject, 1115084);
+                            GiveFromEmote(sourceObject, 36518);
                             GiveFromEmote(sourceObject, 44240111);
                         }
                         else
@@ -445,7 +445,7 @@ namespace ACE.Server.WorldObjects
                             // High tier rewards (levels 55+)
                             GiveFromEmote(sourceObject, 44240111);  // REPLACE WITH YOUR HIGH TIER WCID #1
                             GiveFromEmote(sourceObject, 20630);  // REPLACE WITH YOUR HIGH TIER WCID #2
-                            GiveFromEmote(sourceObject, 50184);  // REPLACE WITH YOUR HIGH TIER WCID #3
+                            GiveFromEmote(sourceObject, 1115084);  // REPLACE WITH YOUR HIGH TIER WCID #3
                         }
                     }
 

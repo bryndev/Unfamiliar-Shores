@@ -671,6 +671,10 @@ namespace ACE.Server.WorldObjects
                 resistanceMod = (float)Math.Max(0.0f, target.GetResistanceMod(resistanceType, this, null, weaponResistanceMod));
 
                 finalDamage = (lifeMagicDamage + critDamageBonus) * elementalDamageMod * slayerMod * resistanceMod * absorbMod;
+                
+                // Apply PvE damage boost for life magic (15% base + 5% extra for life magic = 20% total)
+                if (!isPvP)
+                    finalDamage *= 1.20f;
             }
             // war/void magic projectiles
             else
@@ -760,6 +764,10 @@ namespace ACE.Server.WorldObjects
                 finalDamage = baseDamage + critDamageBonus + skillBonus;
 
                 finalDamage *= elementalDamageMod * slayerMod * resistanceMod * absorbMod;
+                
+                // Apply PvE damage boost for war/void magic (15% base)
+                if (!isPvP)
+                    finalDamage *= 1.15f;
             }
 
   // Apply PvP damage mods for Life / War / Void

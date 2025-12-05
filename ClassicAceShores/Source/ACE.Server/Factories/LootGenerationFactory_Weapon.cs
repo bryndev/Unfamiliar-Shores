@@ -83,7 +83,7 @@ namespace ACE.Server.Factories
             {
                 float amount;
                 if (wo.IsCaster)
-                    amount = 0.10f;
+                    amount = 0.2f;
                 else
                     amount = 0.15f;
                 wo.CriticalFrequency = amount;
@@ -124,7 +124,7 @@ namespace ACE.Server.Factories
             chance = ApplyQualityModToExtraMutationChance(chance, treasureDeath.LootQualityMod);
             if (chance > ThreadSafeRandom.Next(0.0f, 1.0f))
             {
-                // wo.IgnoreMagicResist = true;
+                wo.IgnoreMagicResist = true;
                 wo.IgnoreMagicArmor = true;
                 wo.Translucency = 0.7f;
                 wo.Name = $"Hollow {wo.Name}";

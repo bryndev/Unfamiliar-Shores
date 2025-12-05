@@ -117,9 +117,9 @@ namespace ACE.Server.Entity
         // creature defender
         public Quadrant Quadrant;
 
-        public bool IgnoreMagicArmor =>  (Weapon?.IgnoreMagicArmor ?? false) || (Attacker?.IgnoreMagicArmor ?? false);      // ignores impen / banes
+        public bool IgnoreMagicArmor =>  (Weapon?.IgnoreMagicArmor ?? true) || (Attacker?.IgnoreMagicArmor ?? true);      // ignores impen / banes
 
-        public bool IgnoreMagicResist => (Weapon?.IgnoreMagicResist ?? false) || (Attacker?.IgnoreMagicResist ?? false);    // ignores life armor / prots
+        public bool IgnoreMagicResist => (Weapon?.IgnoreMagicResist ?? true) || (Attacker?.IgnoreMagicResist ?? true);    // ignores life armor / prots
 
         public bool Overpower;
 

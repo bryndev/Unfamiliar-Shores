@@ -99,6 +99,28 @@ namespace ACE.Server.WorldObjects
                 return 1;
             }
         }
+
+        // BEGIN SWORD 360-DEGREE SWEEP
+        /// <summary>
+        /// Returns TRUE if this weapon performs a 360-degree sweep attack
+        /// </summary>
+        public bool IsSwordSweep { get => WeaponSkill == Skill.Sword; }
+
+        /// <summary>
+        /// Returns the number of sweep targets for this weapon (360-degree cone)
+        /// Swords can hit multiple targets around the wielder
+        /// </summary>
+        public int SwordSweepTargets
+        {
+            get
+            {
+                if (!IsSwordSweep)
+                    return 0;
+                else
+                    return 2; // Can hit 2 additional targets in 360-degree radius
+            }
+        }
+        // END SWORD 360-DEGREE SWEEP
         
         /// <summary>
         /// Returns the primary weapon equipped by a creature
@@ -315,14 +337,38 @@ namespace ACE.Server.WorldObjects
             var speedMod = weapon != null ? weapon.EnchantmentManager.GetWeaponSpeedMod() : 0;
             var auraSpeedMod = wielder != null ? wielder.EnchantmentManager.GetWeaponSpeedMod() : 0;
 
+            uint finalSpeed;
+
             if (Common.ConfigManager.Config.Server.WorldRuleset <= Common.Ruleset.Infiltration)
             {
                 var multSpeedMod = weapon != null ? weapon.EnchantmentManager.GetWeaponMultiplicativeSpeedMod() : 1.0f;
 
-                return (uint)Math.Max(0, Math.Round((baseSpeed * multSpeedMod) + speedMod + auraSpeedMod));
+                finalSpeed = (uint)Math.Max(0, Math.Round((baseSpeed * multSpeedMod) + speedMod + auraSpeedMod));
+            }
+            else
+            {
+                finalSpeed = (uint)Math.Max(0, baseSpeed + speedMod + auraSpeedMod);
             }
 
-            return (uint)Math.Max(0, baseSpeed + speedMod + auraSpeedMod);
+            // BEGIN MELEE ATTACK SPEED INCREASE
+            // All melee weapons attack 10% faster
+            // Swords attack 20% faster (they're precision weapons)
+            if (weapon != null && !weapon.IsRanged && weapon.WeenieType != WeenieType.Caster)
+            {
+                if (weapon.WeaponSkill == Skill.Sword)
+                {
+                    // Swords are 20% faster
+                    finalSpeed = (uint)Math.Max(0, Math.Round(finalSpeed * 0.8f));
+                }
+                else
+                {
+                    // Other melee weapons are 10% faster
+                    finalSpeed = (uint)Math.Max(0, Math.Round(finalSpeed * 0.9f));
+                }
+            }
+            // END MELEE ATTACK SPEED INCREASE
+
+            return finalSpeed;
         }
 
         /// <summary>
@@ -410,7 +456,7 @@ namespace ACE.Server.WorldObjects
         // what this was actually increased to for base, was never stated directly in the dev notes
         // speculation is that it was 5%, to align with the minimum that CS magic scales from
 
-        private const float defaultMagicCritFrequency = 0.05f;
+        private const float defaultMagicCritFrequency = 0.07f;
 
         /// <summary>
         /// Returns the critical chance for the caster weapon
@@ -1070,6 +1116,14 @@ namespace ACE.Server.WorldObjects
                 }
             }
 
+            // BEGIN AXE CB BUFF
+            // Axe weapons receive a flat +7.5% crit damage bonus
+            if (skill.Skill == Skill.Axe || skill.Skill == Skill.LightWeapons)
+            {
+                cripplingBlowMod += 0.075f;
+            }
+            // END AXE CB BUFF
+
             return cripplingBlowMod;
         }
 
@@ -1543,8 +1597,9 @@ namespace ACE.Server.WorldObjects
             if (target.IsDead)
                 return; // Target is already dead, abort!
 
-            if (WeaponSkill != Skill.Dagger && WeaponSkill != Skill.UnarmedCombat)
-                return;
+            // BEGIN WEAPON TYPE/SKILL FILTERING - Removed strict filter, let if-else chain handle it
+            // This allows combined skills (Axe/Mace, Spear/Staff) to work properly
+            // END WEAPON TYPE/SKILL FILTERING
 
             var procSpellId = SpellId.Undef;
             var creatureAttacker = attacker as Creature;
@@ -1552,8 +1607,11 @@ namespace ACE.Server.WorldObjects
                 return;
 
             var currentTime = Time.GetUnixTime();
+            
+            // BEGIN COOLDOWN CHECK
             if (NextInnateProcAttemptTime > currentTime)
                 return;
+            // END COOLDOWN CHECK
 
             var playerAttacker = attacker as Player;
             var chance = 0.25f;
@@ -1578,6 +1636,7 @@ namespace ACE.Server.WorldObjects
 
                 showCastMessage = true;
 
+                // BEGIN DAGGER BLEED THRESHOLD UPDATE
                 var skill = creatureAttacker.GetCreatureSkill(Skill.Dagger);
                 if (skill.AdvancementClass >= SkillAdvancementClass.Trained)
                 {
@@ -1585,14 +1644,14 @@ namespace ACE.Server.WorldObjects
                     var highest = enchantments?.OrderByDescending(i => i.PowerLevel).FirstOrDefault();
                     if (skill.Current < 100)
                         procSpellId = SpellId.Bleeding1;
-                    else if (skill.Current < 150)
+                    else if (skill.Current < 176)
                     {
                         if (highest == null)
                             procSpellId = SpellId.Bleeding1;
                         else
                             procSpellId = SpellId.Bleeding2;
                     }
-                    else if (skill.Current < 200)
+                    else if (skill.Current < 226)
                     {
                         if (highest == null)
                             procSpellId = SpellId.Bleeding1;
@@ -1601,7 +1660,7 @@ namespace ACE.Server.WorldObjects
                         else
                             procSpellId = SpellId.Bleeding3;
                     }
-                    else if (skill.Current < 250)
+                    else if (skill.Current < 301)
                     {
                         if (highest == null)
                             procSpellId = SpellId.Bleeding2;
@@ -1610,7 +1669,7 @@ namespace ACE.Server.WorldObjects
                         else
                             procSpellId = SpellId.Bleeding4;
                     }
-                    else if (skill.Current < 300)
+                    else if (skill.Current < 351)
                     {
                         if (highest == null)
                             procSpellId = SpellId.Bleeding3;
@@ -1619,7 +1678,7 @@ namespace ACE.Server.WorldObjects
                         else
                             procSpellId = SpellId.Bleeding5;
                     }
-                    else if (skill.Current < 325)
+                    else if (skill.Current < 401)
                     {
                         if (highest == null)
                             procSpellId = SpellId.Bleeding4;
@@ -1628,7 +1687,7 @@ namespace ACE.Server.WorldObjects
                         else
                             procSpellId = SpellId.Bleeding6;
                     }
-                    else if (skill.Current < 350)
+                    else if (skill.Current < 421)
                     {
                         if (highest == null)
                             procSpellId = SpellId.Bleeding5;
@@ -1637,7 +1696,7 @@ namespace ACE.Server.WorldObjects
                         else
                             procSpellId = SpellId.Bleeding7;
                     }
-                    else
+                    else if (skill.Current < 441)
                     {
                         if (highest == null)
                             procSpellId = SpellId.Bleeding6;
@@ -1646,8 +1705,19 @@ namespace ACE.Server.WorldObjects
                         else
                             procSpellId = SpellId.Bleeding8;
                     }
+                    else
+                    {
+                        if (highest == null)
+                            procSpellId = SpellId.Bleeding7;
+                        else if (highest.SpellId == (int)SpellId.Bleeding7)
+                            procSpellId = SpellId.Bleeding8;
+                        else
+                            procSpellId = SpellId.Bleeding8;
+                    }
                 }
+                // END DAGGER BLEED THRESHOLD UPDATE
             }
+            // BEGIN UNARMED THRESHOLD UPDATE - Max level 5
             else if (WeaponSkill == Skill.UnarmedCombat)
             {
                 showCastMessage = true;
@@ -1656,14 +1726,18 @@ namespace ACE.Server.WorldObjects
                 if (skill.AdvancementClass >= SkillAdvancementClass.Trained)
                 {
                     int spellLevel;
-                    if (skill.Current < 200)
+                    if (skill.Current < 100)
                         spellLevel = 1;
-                    else if (skill.Current < 300)
+                    else if (skill.Current < 175)
+                        spellLevel = 1;
+                    else if (skill.Current < 266)
                         spellLevel = 2;
-                    else if (skill.Current < 400)
+                    else if (skill.Current < 351)
                         spellLevel = 3;
-                    else
+                    else if (skill.Current < 421)
                         spellLevel = 4;
+                    else
+                        spellLevel = 5;
 
                     switch (creatureAttacker.GetDamageType(false, CombatType.Melee))
                     {
@@ -1677,6 +1751,61 @@ namespace ACE.Server.WorldObjects
                     }
                 }
             }
+            // END UNARMED THRESHOLD UPDATE
+
+            // BEGIN MACE MANA DRAIN - USE SKILL.AXE (COMBINED SKILL)
+            else if (WeaponSkill == Skill.Mace)
+            {
+                showCastMessage = true;
+
+                // Use Skill.Axe since that's the combined "Axe and Mace" skill
+                var skill = creatureAttacker.GetCreatureSkill(Skill.Axe);
+                
+                if (skill.AdvancementClass >= SkillAdvancementClass.Trained)
+                {
+                    // Direct SpellId assignment like Dagger - DrainManaOther spells (IDs 1260-1264)
+                    if (skill.Current < 100)
+                        procSpellId = (SpellId)1260; // DrainManaOther1
+                    else if (skill.Current < 175)
+                        procSpellId = (SpellId)1260; // DrainManaOther1
+                    else if (skill.Current < 266)
+                        procSpellId = (SpellId)1261; // DrainManaOther2
+                    else if (skill.Current < 351)
+                        procSpellId = (SpellId)1262; // DrainManaOther3
+                    else if (skill.Current < 421)
+                        procSpellId = (SpellId)1263; // DrainManaOther4
+                    else
+                        procSpellId = (SpellId)1264; // DrainManaOther5
+                }
+            }
+            // END MACE MANA DRAIN
+
+            // BEGIN STAFF STAMINA DRAIN - USE SKILL.SPEAR (COMBINED SKILL)
+            else if (WeaponSkill == Skill.Staff)
+            {
+                showCastMessage = true;
+
+                // Use Skill.Spear since that's the combined "Spear and Staff" skill
+                var skill = creatureAttacker.GetCreatureSkill(Skill.Spear);
+                
+                if (skill.AdvancementClass >= SkillAdvancementClass.Trained)
+                {
+                    // Direct SpellId assignment like Dagger - DrainStaminaOther spells (IDs 1249-1253)
+                    if (skill.Current < 100)
+                        procSpellId = (SpellId)1249; // DrainStaminaOther1
+                    else if (skill.Current < 175)
+                        procSpellId = (SpellId)1249; // DrainStaminaOther1
+                    else if (skill.Current < 266)
+                        procSpellId = (SpellId)1250; // DrainStaminaOther2
+                    else if (skill.Current < 351)
+                        procSpellId = (SpellId)1251; // DrainStaminaOther3
+                    else if (skill.Current < 421)
+                        procSpellId = (SpellId)1252; // DrainStaminaOther4
+                    else
+                        procSpellId = (SpellId)1253; // DrainStaminaOther5
+                }
+            }
+            // END STAFF STAMINA DRAIN
 
             if (procSpellId == SpellId.Undef)
                 return;
@@ -1708,9 +1837,13 @@ namespace ACE.Server.WorldObjects
 
             if (creatureAttacker != null)
             {
+                // BEGIN SET COOLDOWN
                 NextInnateProcAttemptTime = currentTime + InnateProcAttemptInterval;
+                // END SET COOLDOWN
 
-                if (WeaponSkill == Skill.UnarmedCombat)
+                // BEGIN MANA COST FOR SPELL-CASTING WEAPONS
+                // Check by weapon skill - must check Mace/Staff which use combined skills
+                if (WeaponSkill == Skill.UnarmedCombat || WeaponSkill == Skill.Mace || WeaponSkill == Skill.Staff)
                 {
                     var manaCost = spell.BaseMana;
                     var manaConvDiff = spell.Level * 25;
@@ -1728,6 +1861,7 @@ namespace ACE.Server.WorldObjects
                         return;
                     }
                 }
+                // END MANA COST FOR SPELL-CASTING WEAPONS
             }
 
             var itemCaster = this is Creature ? null : this;
